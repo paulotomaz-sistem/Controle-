@@ -1,45 +1,55 @@
-# Controle+ — pronto para GitHub e Render
+# Controle+ — pacote Python para GitHub e Render
 
-Aplicação web Flask com páginas HTML e banco SQLite.
+Este pacote é uma aplicação **Python/Flask**, não Node.js.
 
-## Arquivos
+## Arquivos que precisam ficar na raiz do repositório
 
-- `app.py`: servidor Flask e API.
-- `index.html`, `sistema.html`, `usuarios.html`, `historico.html`, `cadastro.html`, `baixa.html`: telas.
-- `requirements.txt`: dependências Python.
-- `render.yaml`: configuração do serviço Python no Render e disco persistente.
-- `.env.example`: exemplo de configuração local.
+`app.py`, `requirements.txt`, `render.yaml`, `Procfile`, `.python-version`,
+`index.html`, `sistema.html`, `usuarios.html`, `historico.html`,
+`cadastro.html` e `baixa.html`.
 
 ## Publicar no GitHub
 
 1. Extraia este ZIP.
-2. Crie um repositório no GitHub.
-3. Envie **o conteúdo desta pasta** para a raiz do repositório (o `app.py`, `requirements.txt` e `render.yaml` devem ficar na raiz).
-4. Não envie banco de dados, backups ou arquivos `.env`. O `.gitignore` já exclui esses arquivos.
+2. Envie o **conteúdo** desta pasta para a raiz do repositório GitHub.
+3. Confira no GitHub que `app.py`, `requirements.txt` e `render.yaml`
+   aparecem logo na primeira tela do repositório, sem uma pasta extra envolvendo tudo.
+4. Não envie banco de dados, backups ou arquivos `.env`.
 
-## Publicar no Render
+## IMPORTANTE: corrigir o serviço do Render
 
-**Opção recomendada:** no Render, selecione **New + → Blueprint**, conecte o repositório e deixe o Render ler o `render.yaml`.
+O log anterior mostrou `Using Node.js` e `yarn`. Isso confirma que o serviço
+antigo foi criado com runtime Node. **Não continue fazendo deploy nesse serviço**:
+o runtime dele não é corrigido apenas trocando o comando de inicialização.
 
-Se criar um Web Service manualmente, configure:
+Crie um serviço Python novo a partir deste repositório:
 
-- Runtime: `Python 3`
-- Build Command: `pip install -r requirements.txt`
-- Start Command: `gunicorn app:app --workers 1 --threads 4 --timeout 120`
-- `SECRET_KEY`: gere uma chave aleatória forte.
-- `INITIAL_ADMIN_PASSWORD`: defina uma senha forte para o primeiro acesso.
-- `FLASK_ENV`: `production`
-- `DATABASE_PATH`: `/var/data/controleplus.db`
+1. No Render, escolha **New + → Blueprint**.
+2. Conecte o repositório GitHub que contém estes arquivos na raiz.
+3. O Render deve detectar este `render.yaml` e criar o serviço com runtime Python.
+4. Quando solicitado, informe `INITIAL_ADMIN_PASSWORD` com uma senha forte.
+5. Confirme a criação do serviço e aguarde a instalação via `pip`.
 
-Anexe um Persistent Disk montado em `/var/data`. O `render.yaml` já declara um disco de 1 GB. Se o Render estiver executando `yarn` ou Node.js, o serviço foi criado com runtime incorreto: crie um novo Web Service Python ou use o Blueprint deste repositório.
+Se preferir criar **Web Service** manualmente, escolha runtime **Python 3**,
+Build Command `pip install -r requirements.txt` e Start Command
+`gunicorn app:app --workers 1 --threads 4 --timeout 120`.
 
-## Primeiro acesso e banco de dados
+O arquivo `render.yaml` configura um disco persistente em `/var/data`.
+O uso de disco persistente pode exigir um plano pago do Render. Se sua conta
+não permitir disco, não remova essa configuração sem decidir antes como
+armazenar o banco: o armazenamento local temporário pode perder os dados
+em reinicializações ou novos deploys.
 
-O banco será criado automaticamente no primeiro início. O usuário inicial é `gerente`; a senha será exatamente a que você informar em `INITIAL_ADMIN_PASSWORD`. Em produção, o app não inicia se essa senha ou `SECRET_KEY` estiverem ausentes.
+## Primeiro acesso
 
-O banco de dados original não foi incluído neste pacote, para evitar publicar dados operacionais no GitHub. Assim, o primeiro deploy inicia com banco vazio e companhias padrão. Para preservar os registros existentes, faça uma migração privada do arquivo SQLite para o disco persistente do Render; não coloque o `.db` no repositório público.
+O banco SQLite é criado automaticamente no primeiro início. O usuário inicial
+é `gerente`; a senha é a que você definir em `INITIAL_ADMIN_PASSWORD`.
 
-## Rodar localmente
+O banco original não está neste pacote para evitar publicar dados operacionais
+no GitHub. O primeiro deploy começa com banco vazio. Para manter registros
+antigos, faça uma migração privada do arquivo SQLite para o disco persistente.
+
+## Teste local
 
 ```bash
 python -m venv .venv
@@ -49,4 +59,4 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Abra `http://localhost:5000`. No ambiente local, se ainda não houver gerente, a senha inicial de desenvolvimento é `1234`; altere-a após entrar. Não use essa senha em produção.
+Abra `http://127.0.0.1:5000`.
