@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: controleplus
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app --workers 1 --threads 4 --timeout 120"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: INITIAL_ADMIN_PASSWORD
+        sync: false
+      - key: DATABASE_PATH
+        value: /var/data/controleplus.db
+    disk:
+      name: controleplus-data
+      mountPath: /var/data
+      sizeGB: 1

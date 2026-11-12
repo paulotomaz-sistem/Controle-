@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050d18">
+<title>Controle+ | Acesso à Secretaria</title>
+<style>
+  :root{
+    --azul-escuro:#050d18;
+    --azul:#1e3a5f;
+    --azul-claro:#2f5d8a;
+    --dourado:#c9a227;
+    --dourado-claro:#f0d46b;
+    --ciano:#4fd1ff;
+    --erro:#ff6b6b;
+    --texto:#e8eef5;
+    --muted:#8aa4bf;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
+  html,body{height:100%;background:var(--azul-escuro);color:var(--texto);}
+  body{overflow-x:hidden;}
+
+  /* ============================================================
+     INTRO TECNOLÓGICA (4,5s)
+     ============================================================ */
+  #intro{
+    position:fixed;inset:0;z-index:9999;
+    background:radial-gradient(circle at 50% 45%, #14294a 0%, #0a1a2f 55%, #050d18 100%);
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    overflow:hidden;padding:24px;
+  }
+
+  #intro .grid{
+    position:absolute;inset:-50%;
+    background-image:
+      linear-gradient(rgba(47,93,138,.16) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(47,93,138,.16) 1px, transparent 1px);
+    background-size:64px 64px;
+    transform:perspective(600px) rotateX(58deg);
+    animation:gradeMove 8s linear infinite;
+    opacity:.55;
+  }
+  @keyframes gradeMove{
+    from{background-position:0 0,0 0;}
+    to{background-position:0 64px,64px 0;}
+  }
+
+  #intro .chuva{
+    position:absolute;inset:0;overflow:hidden;opacity:.35;pointer-events:none;
+  }
+  #intro .chuva span{
+    position:absolute;top:-40px;
+    color:var(--ciano);
+    font-family:'Courier New',monospace;
+    font-size:12px;letter-spacing:2px;white-space:pre;
+    text-shadow:0 0 6px rgba(79,209,255,.7);
+    animation:cair linear infinite;
+  }
+  @keyframes cair{
+    to{transform:translateY(110vh);opacity:0;}
+  }
+
+  #intro .scan{
+    position:absolute;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--dourado-claro),transparent);
+    box-shadow:0 0 20px var(--dourado);
+    animation:scan 3.6s ease-in-out infinite;
+  }
+  @keyframes scan{
+    0%{top:0;opacity:0;}
+    8%{opacity:1;}
+    92%{opacity:1;}
+    100%{top:100%;opacity:0;}
+  }
+
+  .particula{
+    position:absolute;width:3px;height:3px;border-radius:50%;
+    background:var(--dourado-claro);
+    box-shadow:0 0 8px var(--dourado);
+    opacity:0;
+    animation:particula 3.2s ease-in-out infinite;
+  }
+  @keyframes particula{
+    0%{opacity:0;transform:translateY(0) scale(.4);}
+    30%{opacity:1;}
+    100%{opacity:0;transform:translateY(-140px) scale(1.5);}
+  }
+
+  /* HUD nos cantos */
+  .hud{
+    position:absolute;width:52px;height:52px;
+    border:2px solid rgba(201,162,39,.45);
+    opacity:0;
+    animation:hudEntra .8s .4s forwards;
+  }
+  .hud.tl{top:16px;left:16px;border-right:none;border-bottom:none;}
+  .hud.tr{top:16px;right:16px;border-left:none;border-bottom:none;}
+  .hud.bl{bottom:16px;left:16px;border-right:none;border-top:none;}
+  .hud.br{bottom:16px;right:16px;border-left:none;border-top:none;}
+  @keyframes hudEntra{to{opacity:1;}}
+
+  .hud-txt{
+    position:absolute;font-family:'Courier New',monospace;
+    font-size:9px;letter-spacing:2px;color:#5e7691;
+    text-transform:uppercase;opacity:0;line-height:1.5;
+    animation:hudEntra .8s 1s forwards;
+  }
+  .hud-txt.tl{top:76px;left:20px;}
+  .hud-txt.br{bottom:76px;right:20px;text-align:right;}
+
+  /* anéis de energia */
+  .anel{
+    position:absolute;width:300px;height:300px;border-radius:50%;
+    border:1px solid rgba(201,162,39,.22);
+    animation:anelGira 4s linear infinite;
+  }
+  .anel::before{
+    content:"";position:absolute;top:-4px;left:50%;width:7px;height:7px;border-radius:50%;
+    background:var(--dourado-claro);box-shadow:0 0 14px var(--dourado);
+    transform:translateX(-50%);
+  }
+  .anel.a2{
+    width:420px;height:420px;animation-direction:reverse;animation-duration:6s;
+    border-color:rgba(79,209,255,.18);
+  }
+  .anel.a2::before{background:var(--ciano);box-shadow:0 0 14px var(--ciano);}
+  .anel.a3{
+    width:540px;height:540px;animation-duration:9s;
+    border-color:rgba(47,93,138,.16);
+  }
+  .anel.a3::before{background:var(--azul-claro);box-shadow:0 0 12px var(--azul-claro);}
+  @keyframes anelGira{to{transform:rotate(360deg);}}
+
+  /* logo com montagem por letra */
+  .intro-logo{
+    position:relative;z-index:3;text-align:center;
+    display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;
+    gap:1px;
+  }
+  .intro-logo .letra{
+    display:inline-block;
+    font-size:clamp(38px,11vw,96px);
+    font-weight:900;letter-spacing:1px;color:#fff;
+    text-shadow:0 0 30px rgba(201,162,39,.4);
+    clip-path:inset(0 100% 0 0);
+    animation:letraEntra .55s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  @keyframes letraEntra{
+    to{clip-path:inset(0 0 0 0);}
+  }
+  .intro-logo .mais{
+    color:var(--dourado-claro);
+    text-shadow:0 0 25px var(--dourado),0 0 60px var(--dourado);
+    animation:letraEntra .55s cubic-bezier(.2,.8,.2,1) forwards,
+              pulso 1.4s 1.6s ease-in-out infinite alternate;
+  }
+  @keyframes pulso{
+    from{text-shadow:0 0 18px var(--dourado);}
+    to{text-shadow:0 0 42px var(--dourado-claro),0 0 90px var(--dourado);}
+  }
+
+  .intro-logo .sub{
+    width:100%;margin-top:14px;
+    font-size:clamp(10px,2.4vw,14px);
+    letter-spacing:8px;text-transform:uppercase;color:#9fb6cc;
+    opacity:0;animation:fadeUp .7s 1.5s forwards;
+  }
+  .linha-ouro{
+    width:0;height:2px;margin:18px auto 0;
+    background:linear-gradient(90deg,transparent,var(--dourado),transparent);
+    box-shadow:0 0 12px var(--dourado);
+    animation:linhaCresce .9s 1.7s forwards;
+  }
+  @keyframes linhaCresce{to{width:min(280px,60vw);}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+  .intro-barra{
+    position:absolute;bottom:14%;width:min(340px,72vw);height:3px;
+    background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;
+    z-index:3;opacity:0;animation:fadeUp .5s 1.4s forwards;
+  }
+  .intro-barra div{
+    height:100%;width:0;
+    background:linear-gradient(90deg,var(--azul-claro),var(--dourado-claro));
+    box-shadow:0 0 14px var(--dourado);
+    animation:barraCarrega 2.4s 1.5s cubic-bezier(.4,0,.2,1) forwards;
+  }
+  @keyframes barraCarrega{to{width:100%;}}
+
+  .intro-status{
+    position:absolute;bottom:calc(14% - 26px);z-index:3;
+    font-family:'Courier New',monospace;
+    font-size:10px;letter-spacing:2px;color:#7f98b3;text-transform:uppercase;
+    opacity:0;animation:fadeUp .5s 1.5s forwards;text-align:center;padding:0 16px;
+  }
+  .intro-status::after{
+    content:"_";animation:piscaCursor .8s steps(1) infinite;
+  }
+  @keyframes piscaCursor{50%{opacity:0;}}
+
+  .flash{
+    position:absolute;inset:0;background:var(--dourado-claro);
+    opacity:0;z-index:5;pointer-events:none;
+  }
+  .flash.ativo{animation:flashFim .7s ease-out forwards;}
+  @keyframes flashFim{
+    0%{opacity:0;}
+    25%{opacity:.35;}
+    100%{opacity:0;}
+  }
+
+  #intro.sair{
+    animation:saiIntro .85s cubic-bezier(.7,0,.3,1) forwards;
+  }
+  @keyframes saiIntro{
+    to{opacity:0;transform:scale(1.12);filter:blur(10px);visibility:hidden;}
+  }
+
+  /* ============================================================
+     TELA DE LOGIN
+     ============================================================ */
+  #login{
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    background:
+      radial-gradient(circle at 20% 20%, #1b3557 0%, transparent 55%),
+      radial-gradient(circle at 80% 80%, #1a2f4d 0%, transparent 55%),
+      linear-gradient(135deg,#0a1a2f,#050d18);
+    opacity:0;visibility:hidden;
+    transition:opacity .9s ease, visibility .9s;
+    overflow-y:auto;
+  }
+  #login.ativo{opacity:1;visibility:visible;}
+  #login::before{
+    content:"";position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(47,93,138,.06) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(47,93,138,.06) 1px,transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(circle at 50% 50%,#000 0%,transparent 75%);
+    -webkit-mask-image:radial-gradient(circle at 50% 50%,#000 0%,transparent 75%);
+    pointer-events:none;
+  }
+
+  .login-card{
+    position:relative;z-index:2;
+    width:100%;max-width:420px;
+    background:linear-gradient(160deg,rgba(30,58,95,.55),rgba(10,26,47,.75));
+    border:1px solid rgba(201,162,39,.25);
+    border-radius:20px;
+    padding:clamp(26px,5vw,40px) clamp(20px,5vw,34px) clamp(24px,4vw,34px);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08);
+    opacity:0;transform:translateY(40px) scale(.96);
+  }
+  #login.ativo .login-card{
+    animation:cardEntra .9s .15s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  @keyframes cardEntra{
+    to{opacity:1;transform:none;}
+  }
+
+  #login.ativo .marca,
+  #login.ativo .divisor,
+  #login.ativo .campo-login,
+  #login.ativo .btn-entrar,
+  #login.ativo .rodape-login{
+    opacity:0;transform:translateY(12px);
+    animation:cascata .5s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  #login.ativo .marca{animation-delay:.35s;}
+  #login.ativo .divisor{animation-delay:.45s;}
+  #login.ativo .campo-login:nth-of-type(1){animation-delay:.55s;}
+  #login.ativo .campo-login:nth-of-type(2){animation-delay:.65s;}
+  #login.ativo .btn-entrar{animation-delay:.75s;}
+  #login.ativo .rodape-login{animation-delay:.9s;}
+  @keyframes cascata{to{opacity:1;transform:none;}}
+
+  .login-card .marca{text-align:center;margin-bottom:8px;}
+  .login-card .marca h1{
+    font-size:clamp(30px,7vw,38px);font-weight:900;letter-spacing:1px;color:#fff;
+  }
+  .login-card .marca h1 span{
+    color:var(--dourado-claro);
+    text-shadow:0 0 20px var(--dourado);
+  }
+  .login-card .marca p{
+    margin-top:6px;font-size:11px;letter-spacing:6px;
+    text-transform:uppercase;color:var(--muted);
+  }
+  .divisor{
+    height:1px;margin:22px 0 26px;
+    background:linear-gradient(90deg,transparent,rgba(201,162,39,.5),transparent);
+  }
+
+  .campo-login{position:relative;margin-bottom:16px;}
+  .campo-login label{
+    display:block;font-size:11px;letter-spacing:2px;
+    text-transform:uppercase;color:var(--muted);margin-bottom:7px;
+  }
+  .campo-login .input-wrap{
+    position:relative;display:flex;align-items:center;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:11px;transition:.25s;
+  }
+  .campo-login .input-wrap:focus-within{
+    border-color:var(--dourado);
+    box-shadow:0 0 0 3px rgba(201,162,39,.15),0 0 20px rgba(201,162,39,.15);
+    background:rgba(255,255,255,.08);
+  }
+  .campo-login input{
+    flex:1;width:100%;background:transparent;border:none;outline:none;
+    padding:14px 16px;color:#fff;font-size:15px;
+  }
+  .campo-login input::placeholder{color:#5e7691;}
+
+  .toggle-senha{
+    background:transparent;border:none;
+    color:var(--muted);padding:0 14px;cursor:pointer;
+    font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    font-weight:600;transition:.2s;white-space:nowrap;
+  }
+  .toggle-senha:hover,.toggle-senha:focus-visible{color:var(--dourado-claro);outline:none;}
+
+  .btn-entrar{
+    width:100%;margin-top:8px;
+    padding:15px;border:none;border-radius:11px;cursor:pointer;
+    font-size:clamp(13px,3.5vw,15px);font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    color:#0a1a2f;
+    background:linear-gradient(135deg,var(--dourado-claro),var(--dourado));
+    box-shadow:0 8px 24px rgba(201,162,39,.35);
+    transition:.25s;position:relative;overflow:hidden;
+  }
+  .btn-entrar:hover{
+    transform:translateY(-2px);
+    box-shadow:0 12px 30px rgba(201,162,39,.5);
+  }
+  .btn-entrar:active{transform:translateY(0);}
+  .btn-entrar::after{
+    content:"";position:absolute;top:0;left:-100%;width:60%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);
+    transform:skewX(-20deg);transition:left .6s;
+  }
+  .btn-entrar:hover::after{left:130%;}
+
+  .erro-msg{
+    display:none;
+    background:rgba(255,107,107,.12);
+    border:1px solid rgba(255,107,107,.4);
+    color:#ffb3b3;
+    padding:10px 14px;border-radius:9px;
+    font-size:13px;margin-bottom:16px;
+    animation:tremer .35s;
+  }
+  .erro-msg.ativo{display:block;}
+  @keyframes tremer{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-6px);}
+    75%{transform:translateX(6px);}
+  }
+
+  .rodape-login{
+    margin-top:26px;text-align:center;
+    font-size:11px;color:#5e7691;line-height:1.8;
+  }
+  .rodape-login b{color:#9fb6cc;}
+  .selo{
+    display:inline-flex;align-items:center;gap:6px;
+    margin-top:14px;padding:5px 12px;border-radius:20px;
+    background:rgba(201,162,39,.1);
+    border:1px solid rgba(201,162,39,.25);
+    font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--dourado-claro);
+  }
+  .selo::before{
+    content:"";width:6px;height:6px;border-radius:50%;
+    background:var(--dourado-claro);box-shadow:0 0 8px var(--dourado);
+    animation:pisca 1.5s infinite;
+  }
+  @keyframes pisca{50%{opacity:.3;}}
+
+  /* ============================================================
+     RESPONSIVIDADE
+     ============================================================ */
+  @media(max-width:600px){
+    .anel{width:200px;height:200px;}
+    .anel.a2{width:290px;height:290px;}
+    .anel.a3{width:380px;height:380px;}
+    .hud{width:38px;height:38px;border-width:1.5px;}
+    .hud.tl,.hud.tr{top:12px;}
+    .hud.bl,.hud.br{bottom:12px;}
+    .hud.tl,.hud.bl{left:12px;}
+    .hud.tr,.hud.br{right:12px;}
+    .hud-txt{font-size:8px;letter-spacing:1px;}
+    .hud-txt.tl{top:60px;left:16px;}
+    .hud-txt.br{bottom:60px;right:16px;}
+    .intro-status{font-size:9px;letter-spacing:1.5px;}
+  }
+
+  @media(max-width:380px){
+    .intro-logo .letra{font-size:34px;}
+    .login-card .marca p{letter-spacing:4px;}
+  }
+
+  /* telas muito baixas (paisagem celular) */
+  @media(max-height:520px){
+    .anel{width:180px;height:180px;}
+    .anel.a2{width:260px;height:260px;}
+    .anel.a3{width:340px;height:340px;}
+    .intro-barra{bottom:8%;}
+    .intro-status{bottom:calc(8% - 22px);}
+    .intro-logo .letra{font-size:clamp(30px,7vw,54px);}
+    .intro-logo .sub{margin-top:8px;}
+    .linha-ouro{margin-top:10px;}
+    .hud-txt{display:none;}
+  }
+
+  /* telas grandes */
+  @media(min-width:1440px){
+    .anel{width:380px;height:380px;}
+    .anel.a2{width:520px;height:520px;}
+    .anel.a3{width:660px;height:660px;}
+    .intro-logo .letra{font-size:110px;}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     INTRO TECNOLÓGICA (4,5s)
+     ============================================================ -->
+<div id="intro">
+  <div class="grid"></div>
+  <div class="chuva" id="chuva"></div>
+  <div class="scan"></div>
+
+  <div class="hud tl"></div>
+  <div class="hud tr"></div>
+  <div class="hud bl"></div>
+  <div class="hud br"></div>
+  <div class="hud-txt tl">SYS // CTRL+<br>V.1.0</div>
+  <div class="hud-txt br">STATUS: ONLINE<br>SEC // AUT</div>
+
+  <div class="anel a1"></div>
+  <div class="anel a2"></div>
+  <div class="anel a3"></div>
+
+  <div class="intro-logo" id="introLogo"></div>
+  <div class="linha-ouro"></div>
+
+  <div class="intro-barra"><div></div></div>
+  <div class="intro-status" id="introStatus">Inicializando sistema</div>
+
+  <div class="flash" id="flash"></div>
+</div>
+
+<!-- ============================================================
+     TELA DE LOGIN
+     ============================================================ -->
+<div id="login">
+  <div class="login-card">
+    <div class="marca">
+      <h1>Controle<span>+</span></h1>
+      <p>Secretaria</p>
+    </div>
+
+    <div class="divisor"></div>
+
+    <div class="erro-msg" id="erroMsg">Usuário ou senha inválidos.</div>
+
+    <form onsubmit="event.preventDefault(); entrar();">
+      <div class="campo-login">
+        <label for="usuario">Usuário</label>
+        <div class="input-wrap">
+          <input type="text" id="usuario" placeholder="Digite seu usuário" autocomplete="username" required>
+        </div>
+      </div>
+
+      <div class="campo-login">
+        <label for="senha">Senha</label>
+        <div class="input-wrap">
+          <input type="password" id="senha" placeholder="Digite sua senha" autocomplete="current-password" required>
+          <button type="button" class="toggle-senha" onclick="toggleSenha()" id="toggleBtn" aria-label="Mostrar senha">MOSTRAR</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-entrar">Entrar no sistema</button>
+    </form>
+
+    <div class="rodape-login">
+      Acesso de demonstração:<br>
+     
+      <div class="selo">Conexão segura</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CHUVA DE DADOS BINÁRIOS
+   ============================================================ */
+(function criarChuva(){
+  const alvo = document.getElementById('chuva');
+  const chars = '01';
+  const qtd = window.innerWidth < 600 ? 22 : 40;
+  for(let i=0;i<qtd;i++){
+    const s = document.createElement('span');
+    let txt = '';
+    const len = 8 + Math.floor(Math.random()*18);
+    for(let j=0;j<len;j++) txt += chars[Math.floor(Math.random()*chars.length)];
+    s.textContent = txt.split('').join('\n');
+    s.style.left = Math.random()*100 + '%';
+    s.style.animationDuration = (4 + Math.random()*6) + 's';
+    s.style.animationDelay = (Math.random()*4) + 's';
+    s.style.fontSize = (9 + Math.random()*5) + 'px';
+    s.style.opacity = (0.15 + Math.random()*0.4);
+    alvo.appendChild(s);
+  }
+})();
+
+/* ============================================================
+   PARTÍCULAS DOURADAS
+   ============================================================ */
+(function criarParticulas(){
+  const intro = document.getElementById('intro');
+  const qtd = window.innerWidth < 600 ? 16 : 30;
+  for(let i=0;i<qtd;i++){
+    const p = document.createElement('div');
+    p.className = 'particula';
+    p.style.left = Math.random()*100 + '%';
+    p.style.top = (55 + Math.random()*45) + '%';
+    p.style.animationDelay = (Math.random()*2.5) + 's';
+    p.style.animationDuration = (2 + Math.random()*2) + 's';
+    intro.appendChild(p);
+  }
+})();
+
+/* ============================================================
+   MONTAGEM DO LOGO LETRA POR LETRA
+   ============================================================ */
+(function montarLogo(){
+  const alvo = document.getElementById('introLogo');
+  const letras = ['C','o','n','t','r','o','l','e'];
+  let delay = 0.35;
+  letras.forEach(ch=>{
+    const s = document.createElement('span');
+    s.className = 'letra';
+    s.textContent = ch;
+    s.style.animationDelay = delay + 's';
+    alvo.appendChild(s);
+    delay += 0.07;
+  });
+  const mais = document.createElement('span');
+  mais.className = 'letra mais';
+  mais.textContent = '+';
+  mais.style.animationDelay = (delay + 0.15) + 's';
+  alvo.appendChild(mais);
+
+  const sub = document.createElement('div');
+  sub.className = 'sub';
+  sub.textContent = 'Secretaria';
+  alvo.appendChild(sub);
+})();
+
+/* ============================================================
+   STATUS DA INTRO
+   ============================================================ */
+const statusIntro = document.getElementById('introStatus');
+const mensagens = [
+  'Inicializando sistema',
+  'Carregando credenciais',
+  'Verificando integridade',
+  'Estabelecendo conexão segura',
+  'Acesso autorizado'
+];
+let idxMsg = 0;
+const intervaloMsg = setInterval(()=>{
+  idxMsg++;
+  if(idxMsg < mensagens.length) statusIntro.textContent = mensagens[idxMsg];
+}, 800);
+
+/* ============================================================
+   SEQUÊNCIA FINAL → LOGIN (4,5s)
+   ============================================================ */
+setTimeout(()=>{
+  document.getElementById('flash').classList.add('ativo');
+}, 4100);
+
+setTimeout(()=>{
+  clearInterval(intervaloMsg);
+  const intro = document.getElementById('intro');
+  intro.classList.add('sair');
+  setTimeout(()=>{
+    intro.style.display = 'none';
+    document.getElementById('login').classList.add('ativo');
+    setTimeout(()=>document.getElementById('usuario').focus(), 700);
+  }, 850);
+}, 4500);
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+function toggleSenha(){
+  const input = document.getElementById('senha');
+  const btn = document.getElementById('toggleBtn');
+  if(input.type === 'password'){
+    input.type = 'text';
+    btn.textContent = 'OCULTAR';
+    btn.setAttribute('aria-label','Ocultar senha');
+  } else {
+    input.type = 'password';
+    btn.textContent = 'MOSTRAR';
+    btn.setAttribute('aria-label','Mostrar senha');
+  }
+}
+
+function entrar(){
+  const usuario = document.getElementById('usuario').value.trim().toLowerCase();
+  const senha = document.getElementById('senha').value.trim();
+  const erro = document.getElementById('erroMsg');
+
+  const usuariosValidos = {
+    'gerente':    {senha:'1234', papel:'gerente'},
+    'secretaria': {senha:'1234', papel:'secretaria'}
+  };
+
+  const conta = usuariosValidos[usuario];
+
+  if(!conta || conta.senha !== senha){
+    erro.textContent = 'Usuário ou senha inválidos. Tente novamente.';
+    erro.classList.remove('ativo');
+    void erro.offsetWidth;
+    erro.classList.add('ativo');
+    document.getElementById('senha').value = '';
+    document.getElementById('senha').focus();
+    return;
+  }
+
+  sessionStorage.setItem('controleplus_usuario', usuario);
+  sessionStorage.setItem('controleplus_papel', conta.papel);
+
+  const btn = document.querySelector('.btn-entrar');
+  btn.textContent = 'Acesso liberado';
+  btn.style.background = 'linear-gradient(135deg,#6fcf97,#2e7d32)';
+  btn.style.color = '#fff';
+
+  setTimeout(()=>{
+    window.location.href = 'sistema.html';
+  }, 700);
+}
+async function entrar(){
+  const usuario = document.getElementById('usuario').value.trim();
+  const senha = document.getElementById('senha').value.trim();
+  const erro = document.getElementById('erroMsg');
+  const btn = document.querySelector('.btn-entrar');
+
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+
+  try{
+    const resp = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'same-origin',
+      body: JSON.stringify({ usuario, senha })
+    });
+    const r = await resp.json();
+
+    if(!r.ok){
+      erro.textContent = r.erro || 'Usuário ou senha inválidos.';
+      erro.classList.remove('ativo');
+      void erro.offsetWidth;
+      erro.classList.add('ativo');
+      document.getElementById('senha').value = '';
+      document.getElementById('senha').focus();
+      btn.disabled = false;
+      btn.textContent = 'Entrar no sistema';
+      return;
+    }
+
+    btn.textContent = 'Acesso liberado';
+    btn.style.background = 'linear-gradient(135deg,#6fcf97,#2e7d32)';
+    btn.style.color = '#fff';
+
+    setTimeout(()=>{ window.location.href = '/sistema.html'; }, 600);
+  }catch(e){
+    erro.textContent = 'Erro de conexão com o servidor.';
+    erro.classList.add('ativo');
+    btn.disabled = false;
+    btn.textContent = 'Entrar no sistema';
+  }
+}
+</script>
+</body>
+</html>

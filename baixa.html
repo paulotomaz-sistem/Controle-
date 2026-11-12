@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a5f">
+<title>Controle+ | Baixa por Companhia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --azul-escuro:#0a1a2f;--azul:#1e3a5f;--azul-claro:#2f5d8a;
+    --dourado:#c9a227;--dourado-claro:#f0d46b;
+    --cinza:#f4f6f8;--cinza-2:#eef2f6;--borda:#dde4eb;
+    --texto:#1f2a36;--muted:#6b7a8c;
+    --verde:#2e7d32;--amarelo:#f9a825;--vermelho:#c62828;--roxo:#6a1b9a;
+    --sombra-sm:0 1px 2px rgba(15,30,50,.04);
+    --sombra-md:0 4px 16px rgba(15,30,50,.06);
+    --raio:12px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;}
+  html,body{-webkit-text-size-adjust:100%;}
+  body{background:var(--cinza);color:var(--texto);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+       animation:entradaPagina .35s cubic-bezier(.2,.8,.2,1);}
+  @keyframes entradaPagina{
+    from{opacity:0;transform:translateX(12px);filter:blur(2px);}
+    to{opacity:1;transform:none;filter:none;}
+  }
+
+  #progresso{position:fixed;top:0;left:0;right:0;height:3px;z-index:9999;pointer-events:none;}
+  #progresso::before{
+    content:"";position:absolute;top:0;left:0;bottom:0;width:0;
+    background:linear-gradient(90deg,var(--azul-claro),var(--dourado-claro),var(--azul-claro));
+    background-size:200% 100%;
+    box-shadow:0 0 14px var(--dourado),0 0 28px rgba(201,162,39,.5);
+    border-radius:0 3px 3px 0;
+    animation:progressoGlow 1.2s linear infinite;
+    transition:width .3s ease, opacity .3s;
+  }
+  #progresso.ativa::before{width:75%;}
+  #progresso.completa::before{width:100%;opacity:0;transition:width .25s ease, opacity .4s ease .15s;}
+  @keyframes progressoGlow{to{background-position:200% 0;}}
+
+  header{
+    background:linear-gradient(135deg,#16304f 0%,#1e3a5f 50%,#2f5d8a 100%);
+    color:#fff;padding:0 clamp(12px,3vw,28px);
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap;box-shadow:0 4px 20px rgba(10,26,47,.25);
+    position:sticky;top:0;z-index:50;
+    border-bottom:2px solid var(--dourado);min-height:64px;
+  }
+  .logo{display:flex;align-items:baseline;gap:0;padding:10px 0;line-height:1;flex-shrink:0;}
+  .logo .marca{font-size:clamp(18px,4.5vw,24px);font-weight:900;letter-spacing:.3px;color:#fff;}
+  .logo .marca span{color:var(--dourado-claro);text-shadow:0 0 16px rgba(201,162,39,.6);}
+  .logo .tag-sec{display:inline-block;margin-left:10px;padding:2px 8px;border-radius:4px;font-size:8px;font-weight:800;letter-spacing:2px;background:rgba(201,162,39,.15);border:1px solid rgba(201,162,39,.4);color:var(--dourado-claro);vertical-align:middle;position:relative;top:-2px;}
+  nav{display:flex;align-items:center;gap:2px;flex:1;justify-content:center;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  nav::-webkit-scrollbar{display:none;}
+  nav a{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.75);text-decoration:none;white-space:nowrap;transition:.2s;position:relative;text-transform:uppercase;cursor:pointer;}
+  nav a:hover{color:#fff;background:rgba(255,255,255,.08);}
+  nav a.ativo{color:var(--dourado-claro);background:rgba(201,162,39,.12);}
+  nav a.ativo::after{content:"";position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);width:60%;height:2px;background:var(--dourado);border-radius:2px;box-shadow:0 0 8px var(--dourado);}
+  .menu-toggle{display:none;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:#fff;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;align-items:center;justify-content:center;flex-shrink:0;transition:.2s;}
+  .menu-toggle:hover{background:rgba(255,255,255,.2);}
+  .user-info{display:flex;align-items:center;gap:10px;padding:10px 0;flex-shrink:0;}
+  .user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,rgba(201,162,39,.3),rgba(201,162,39,.15));border:1.5px solid rgba(201,162,39,.6);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--dourado-claro);letter-spacing:.5px;flex-shrink:0;}
+  .user-meta{display:flex;flex-direction:column;line-height:1.2;min-width:0;}
+  .user-meta .nome{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+  .user-meta .papel{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dourado-claro);}
+  .btn-sair{background:transparent;border:1px solid #ffffff44;color:#fff;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:1px;transition:.2s;flex-shrink:0;}
+  .btn-sair:hover{background:#ffffff1f;border-color:#ffffff88;transform:translateY(-1px);}
+
+  .container{max-width:1320px;margin:0 auto;padding:clamp(14px,3vw,28px);}
+
+  .titulo-pagina{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+  .titulo-pagina h1{font-size:clamp(18px,4vw,24px);color:var(--azul);font-weight:900;}
+  .titulo-pagina h1 small{display:block;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px;}
+  .titulo-acoes{display:flex;gap:8px;flex-wrap:wrap;}
+
+  .btn-novo{background:linear-gradient(135deg,var(--dourado-claro),var(--dourado));color:var(--azul-escuro);border:none;padding:10px 16px;border-radius:9px;font-size:12px;font-weight:800;letter-spacing:.5px;cursor:pointer;box-shadow:0 6px 20px rgba(201,162,39,.3);transition:.2s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;}
+  .btn-novo:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(201,162,39,.45);}
+  .btn-novo.sec{background:linear-gradient(135deg,var(--azul-claro),var(--azul));color:#fff;box-shadow:0 6px 20px rgba(47,93,138,.3);}
+  .btn-novo.sec:hover{box-shadow:0 10px 26px rgba(47,93,138,.45);}
+  .btn-novo.ghost{background:var(--cinza);color:var(--azul);border:1px solid var(--borda);box-shadow:none;}
+  .btn-novo.ghost:hover{background:#e8edf2;transform:translateY(-1px);box-shadow:var(--sombra-md);}
+
+  .painel{background:#fff;border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra-sm);overflow:hidden;margin-bottom:22px;}
+  .painel-head{padding:14px 18px;border-bottom:1px solid var(--borda);background:linear-gradient(180deg,#f8fafc,#eef2f6);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .painel-head h2{font-size:12px;color:var(--azul);font-weight:800;letter-spacing:1px;text-transform:uppercase;}
+  .painel-head .contagem{font-size:11px;color:var(--muted);font-weight:700;background:#fff;padding:3px 10px;border-radius:20px;border:1px solid var(--borda);}
+
+  .tabela-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px;}
+  th,td{padding:12px 16px;text-align:center;border-bottom:1px solid var(--borda);}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:800;color:var(--muted);white-space:nowrap;background:#f8fafc;}
+  th:first-child,td:first-child{text-align:left;font-weight:800;color:var(--azul);}
+  tbody tr:hover{background:#f4f8fc;}
+  tbody tr:last-child td{border-bottom:none;}
+
+  /* campo de edição inline */
+  .num-campo{
+    width: 80px; padding:6px 8px; border:1px solid var(--borda); border-radius:8px;
+    text-align:center; font-weight:800; font-size:13px; color:var(--azul);
+    background:#fff; outline:none; transition:.2s; font-family:inherit;
+  }
+  .num-campo:focus{border-color:var(--azul-claro);box-shadow:0 0 0 3px rgba(47,93,138,.12);}
+  .num-campo.militares{background:linear-gradient(135deg,#eef3f8,#e3ebf2);}
+  .num-campo.alterado{border-color:var(--dourado);background:#fffbea;}
+
+  .total-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--muted);background:var(--cinza);padding:4px 10px;border-radius:20px;margin-left:6px;}
+
+  .acoes-linha{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
+  .btn-mini{padding:6px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:.2s;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}
+  .btn-mini.salvar{background:#e8f5e9;color:#1b5e20;border-color:#c8e6c9;}
+  .btn-mini.salvar:hover{background:#c8e6c9;}
+  .btn-mini.pdf{background:#e3f2fd;color:#0d47a1;border-color:#bbdefb;}
+  .btn-mini.pdf:hover{background:#bbdefb;}
+
+  .vazio{text-align:center;padding:24px;color:var(--muted);font-style:italic;font-size:13px;}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--azul-escuro);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.35);z-index:9500;transition:transform .3s;max-width:calc(100vw - 32px);}
+  .toast.ativo{transform:translateX(-50%) translateY(0);}
+  .toast.erro{background:var(--vermelho);}
+  .toast.ok{background:var(--verde);}
+
+  .carregando{position:fixed;inset:0;background:var(--azul-escuro);display:flex;align-items:center;justify-content:center;z-index:9999;color:#fff;font-size:12px;letter-spacing:3px;text-transform:uppercase;gap:14px;font-weight:700;padding:20px;text-align:center;}
+  .carregando::after{content:"";width:28px;height:28px;border:3px solid #ffffff22;border-top-color:var(--dourado-claro);border-radius:50%;animation:gira .8s linear infinite;flex-shrink:0;}
+  @keyframes gira{to{transform:rotate(360deg);}}
+
+  .info-ajuda{background:#fff8e1;border:1px solid #ffe082;color:#7a5b00;padding:12px 16px;border-radius:10px;font-size:12px;line-height:1.6;margin-bottom:18px;}
+  .info-ajuda b{font-weight:800;}
+
+  @media(max-width:900px){
+    .menu-toggle{display:flex;}
+    nav{position:absolute;top:100%;left:0;right:0;background:linear-gradient(180deg,#16304f,#1e3a5f);flex-direction:column;align-items:stretch;padding:0 8px;gap:2px;flex:initial;justify-content:flex-start;box-shadow:0 8px 24px rgba(0,0,0,.3);border-bottom:2px solid var(--dourado);max-height:0;overflow:hidden;transition:max-height .3s ease, padding .3s ease;overflow-y:auto;}
+    nav.aberto{max-height:80vh;padding:8px;}
+    nav a{padding:12px 16px;border-radius:8px;justify-content:flex-start;font-size:13px;}
+    nav a.ativo::after{display:none;}
+    nav a.ativo{background:rgba(201,162,39,.18);border-left:3px solid var(--dourado);}
+  }
+  @media(max-width:560px){
+    .logo .tag-sec{display:none;}
+    .user-meta{display:none;}
+    .btn-sair{padding:6px 10px;font-size:10px;}
+    .titulo-pagina h1{font-size:18px;}
+    .titulo-acoes{width:100%;}
+    .titulo-acoes .btn-novo{flex:1 1 100%;justify-content:center;}
+    th,td{padding:10px 8px;}
+    .num-campo{width:60px;font-size:12px;padding:5px 4px;}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *{animation-duration:.01ms !important;transition-duration:.01ms !important;}
+    body{animation:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="carregando" id="carregando">Verificando acesso</div>
+<div id="progresso"></div>
+
+<header>
+  <div class="logo">
+    <div class="marca">Controle<span>+</span></div>
+    <span class="tag-sec">SECRETARIA</span>
+  </div>
+  <button class="menu-toggle" onclick="toggleNav()" aria-label="Menu">&#9776;</button>
+  <nav id="navPrincipal">
+    <a onclick="irPara('sistema.html')">Painel</a>
+    <a onclick="irPara('cadastro.html')">Cadastro</a>
+    <a onclick="irPara('historico.html')">Histórico</a>
+    <a class="ativo">Baixa</a>
+    <a onclick="irPara('usuarios.html')" id="navUsuarios" style="display:none;">Usuários</a>
+  </nav>
+  <div class="user-info">
+    <div class="user-avatar" id="avatarUsuario">?</div>
+    <div class="user-meta">
+      <span class="nome" id="nomeUsuario">—</span>
+      <span class="papel" id="papelUsuario">—</span>
+    </div>
+    <button class="btn-sair" onclick="logout()">SAIR</button>
+  </div>
+</header>
+
+<div class="container" id="app" style="display:none;">
+  <div class="titulo-pagina">
+    <div>
+      <h1>Baixa por Companhia<small>Quantidade de militares e baixas por companhia</small></h1>
+    </div>
+    <div class="titulo-acoes">
+      <button class="btn-novo ghost" onclick="salvarTudo()">SALVAR ALTERAÇÕES</button>
+      <button class="btn-novo sec" onclick="baixarPdfGeral()">BAIXAR PDF COMPLETO</button>
+    </div>
+  </div>
+
+  <div class="info-ajuda">
+    <b>Como funciona:</b> altere os números direto nas células (eles ficam destacados em amarelo até salvar).
+    O campo <b>Militares</b> indica o efetivo total da companhia. Use <b>Baixar PDF</b> na linha para gerar o relatório individual
+    ou <b>Baixar PDF completo</b> no topo para o relatório de todas as companhias.
+  </div>
+
+  <div class="painel">
+    <div class="painel-head">
+      <h2>Companhias</h2>
+      <span class="contagem" id="contagemCompanhias">0</span>
+    </div>
+    <div class="tabela-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Companhia</th>
+            <th>Militares</th>
+            <th>1ª Baixa</th>
+            <th>2ª Baixa</th>
+            <th>Baixa EP</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpoBaixa"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   HELPERS
+   ============================================================ */
+async function api(url, opts={}){
+  const resp = await fetch(url, {
+    headers: {'Content-Type':'application/json'},
+    credentials: 'same-origin',
+    ...opts
+  });
+  return await resp.json();
+}
+function toast(msg, tipo){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ativo ' + (tipo || 'ok');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=> el.classList.remove('ativo'), 2800);
+}
+function toggleNav(){ document.getElementById('navPrincipal').classList.toggle('aberto'); }
+document.addEventListener('click', e=>{
+  const nav = document.getElementById('navPrincipal');
+  const btn = document.querySelector('.menu-toggle');
+  if(nav.classList.contains('aberto') && !nav.contains(e.target) && !btn.contains(e.target)){
+    nav.classList.remove('aberto');
+  }
+});
+function progressoInicio(){
+  const p = document.getElementById('progresso');
+  p.classList.remove('completa'); void p.offsetWidth; p.classList.add('ativa');
+}
+function progressoFim(){
+  const p = document.getElementById('progresso');
+  p.classList.remove('ativa'); p.classList.add('completa');
+  setTimeout(()=> p.classList.remove('completa'), 500);
+}
+async function logout(){
+  try{ await fetch('/api/logout', {method:'POST', credentials:'same-origin'}); }catch(e){}
+  document.body.style.transition = 'opacity .25s';
+  document.body.style.opacity = 0;
+  setTimeout(()=> window.location.href = '/', 250);
+}
+function irPara(url){
+  progressoInicio();
+  document.body.style.transition = 'opacity .25s, transform .25s, filter .25s';
+  document.body.style.opacity = 0;
+  document.body.style.transform = 'translateX(-12px)';
+  document.body.style.filter = 'blur(2px)';
+  setTimeout(()=> window.location.href = url, 200);
+}
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let SESSAO_ATUAL = null;
+let COMPANHIAS = [];        // {id, companhia, b1, b2, ep, militares}
+let ALTERACOES = {};        // {id: {b1,b2,ep,militares}}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function iniciar(){
+  try{
+    const r = await api('/api/sessao');
+    if(!r.ok){ window.location.href = '/'; return; }
+    SESSAO_ATUAL = r.usuario;
+
+    document.getElementById('nomeUsuario').textContent = SESSAO_ATUAL.nome;
+    document.getElementById('papelUsuario').textContent =
+      SESSAO_ATUAL.perfil === 'gerente' ? 'Gerente' : 'Auxiliar';
+    document.getElementById('avatarUsuario').textContent =
+      SESSAO_ATUAL.nome.charAt(0).toUpperCase();
+
+    if(SESSAO_ATUAL.perfil === 'gerente'){
+      document.getElementById('navUsuarios').style.display = 'inline-flex';
+    }
+
+    await carregarBaixa();
+
+    document.getElementById('carregando').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }catch(e){
+    console.error(e);
+    window.location.href = '/';
+  }
+}
+
+async function carregarBaixa(){
+  progressoInicio();
+  const r = await api('/api/baixa');
+  COMPANHIAS = r.ok ? r.baixa.map(b=>({
+    id: b.id,
+    companhia: b.companhia,
+    b1: Number(b.b1) || 0,
+    b2: Number(b.b2) || 0,
+    ep: Number(b.ep) || 0,
+    militares: Number(b.militares) || 0
+  })) : [];
+  ALTERACOES = {};
+  renderBaixa();
+  progressoFim();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderBaixa(){
+  const corpo = document.getElementById('corpoBaixa');
+  corpo.innerHTML = '';
+
+  const cont = document.getElementById('contagemCompanhias');
+  if(cont) cont.textContent = COMPANHIAS.length + (COMPANHIAS.length===1 ? ' companhia' : ' companhias');
+
+  if(!COMPANHIAS.length){
+    corpo.innerHTML = '<tr><td colspan="6" class="vazio">Sem companhias cadastradas no sistema.</td></tr>';
+    return;
+  }
+
+  COMPANHIAS.forEach(c=>{
+    const tr = document.createElement('tr');
+    tr.dataset.id = c.id;
+    const alt = ALTERACOES[c.id] || {};
+    const vB1 = alt.b1 ?? c.b1;
+    const vB2 = alt.b2 ?? c.b2;
+    const vEp = alt.ep ?? c.ep;
+    const vMil = alt.militares ?? c.militares;
+
+    const alteradoB1 = alt.b1 !== undefined && alt.b1 !== c.b1;
+    const alteradoB2 = alt.b2 !== undefined && alt.b2 !== c.b2;
+    const alteradoEp = alt.ep !== undefined && alt.ep !== c.ep;
+    const alteradoMil = alt.militares !== undefined && alt.militares !== c.militares;
+
+    tr.innerHTML = `
+      <td>${c.companhia}</td>
+      <td>
+        <input type="number" min="0" class="num-campo militares ${alteradoMil?'alterado':''}"
+               value="${vMil}" data-id="${c.id}" data-campo="militares"
+               onchange="aoAlterarCampo(this)">
+      </td>
+      <td>
+        <input type="number" min="0" class="num-campo ${alteradoB1?'alterado':''}"
+               value="${vB1}" data-id="${c.id}" data-campo="b1"
+               onchange="aoAlterarCampo(this)">
+      </td>
+      <td>
+        <input type="number" min="0" class="num-campo ${alteradoB2?'alterado':''}"
+               value="${vB2}" data-id="${c.id}" data-campo="b2"
+               onchange="aoAlterarCampo(this)">
+      </td>
+      <td>
+        <input type="number" min="0" class="num-campo ${alteradoEp?'alterado':''}"
+               value="${vEp}" data-id="${c.id}" data-campo="ep"
+               onchange="aoAlterarCampo(this)">
+      </td>
+      <td>
+        <div class="acoes-linha">
+          <button class="btn-mini salvar" onclick="salvarLinha(${c.id})">Salvar</button>
+          <button class="btn-mini pdf" onclick="baixarPdfCompanhia(${c.id})">PDF</button>
+        </div>
+      </td>
+    `;
+    corpo.appendChild(tr);
+  });
+
+  atualizarContagemAlteracoes();
+}
+
+function atualizarContagemAlteracoes(){
+  const n = Object.keys(ALTERACOES).length;
+  const cont = document.getElementById('contagemCompanhias');
+  if(cont){
+    cont.textContent = COMPANHIAS.length + (COMPANHIAS.length===1 ? ' companhia' : ' companhias')
+                      + (n ? ` · ${n} alterada${n>1?'s':''}` : '');
+  }
+}
+
+/* ============================================================
+   EDIÇÃO INLINE
+   ============================================================ */
+function aoAlterarCampo(input){
+  const id = parseInt(input.dataset.id, 10);
+  const campo = input.dataset.campo;
+  const valor = Math.max(0, parseInt(input.value || 0, 10));
+
+  if(!ALTERACOES[id]) ALTERACOES[id] = {};
+  ALTERACOES[id][campo] = valor;
+
+  // marca visual
+  input.classList.add('alterado');
+  atualizarContagemAlteracoes();
+}
+
+async function salvarLinha(id){
+  if(!ALTERACOES[id]){ toast('Nada para salvar nesta linha.', 'erro'); return; }
+  const dados = ALTERACOES[id];
+  progressoInicio();
+  const r = await api('/api/baixa/' + id, {
+    method: 'PUT',
+    body: JSON.stringify(dados)
+  });
+  progressoFim();
+
+  if(!r.ok){ toast(r.erro || 'Erro ao salvar.', 'erro'); return; }
+
+  const c = COMPANHIAS.find(x=>x.id === id);
+  if(c){
+    if(dados.b1 !== undefined) c.b1 = dados.b1;
+    if(dados.b2 !== undefined) c.b2 = dados.b2;
+    if(dados.ep !== undefined) c.ep = dados.ep;
+    if(dados.militares !== undefined) c.militares = dados.militares;
+  }
+  delete ALTERACOES[id];
+  toast('Linha salva.', 'ok');
+  renderBaixa();
+}
+
+async function salvarTudo(){
+  const ids = Object.keys(ALTERACOES).map(x=>parseInt(x,10));
+  if(!ids.length){ toast('Nenhuma alteração para salvar.', 'erro'); return; }
+
+  progressoInicio();
+  let okCount = 0;
+  for(const id of ids){
+    const r = await api('/api/baixa/' + id, {
+      method: 'PUT',
+      body: JSON.stringify(ALTERACOES[id])
+    });
+    if(r.ok){
+      const c = COMPANHIAS.find(x=>x.id === id);
+      if(c){
+        Object.assign(c, ALTERACOES[id]);
+      }
+      delete ALTERACOES[id];
+      okCount++;
+    }
+  }
+  progressoFim();
+
+  toast(`${okCount} companhia${okCount>1?'s':''} salva${okCount>1?'s':''}.`, 'ok');
+  renderBaixa();
+}
+
+/* ============================================================
+   PDF — COMPANHIA INDIVIDUAL
+   ============================================================ */
+function baixarPdfCompanhia(id){
+  const c = COMPANHIAS.find(x=>x.id === id);
+  if(!c){ toast('Companhia não encontrada.', 'erro'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+
+  const totalBaixas = c.b1 + c.b2 + c.ep;
+  const pendentes = Math.max(0, c.militares - totalBaixas);
+  const data = new Date().toLocaleString('pt-BR');
+
+  desenharCabecalho(doc, `Baixa — ${c.companhia}`);
+
+  doc.setFontSize(11);
+  doc.setTextColor(60,60,60);
+  doc.text(`Gerado em: ${data}`, 15, 44);
+  doc.text(`Emitido por: ${SESSAO_ATUAL.nome} (${SESSAO_ATUAL.perfil})`, 15, 50);
+
+  // tabela
+  const linhas = [
+    ['Indicador', 'Quantidade'],
+    ['Militares da companhia', String(c.militares)],
+    ['1ª Baixa', String(c.b1)],
+    ['2ª Baixa', String(c.b2)],
+    ['Baixa EP', String(c.ep)],
+    ['Total de baixas', String(totalBaixas)],
+    ['Pendentes de baixa', String(pendentes)]
+  ];
+
+  desenharTabela(doc, linhas, 60);
+
+  // destaque final
+  const yFinal = 60 + linhas.length * 9 + 6;
+  doc.setFillColor(240,212,107);
+  doc.roundedRect(15, yFinal, 180, 18, 3, 3, 'F');
+  doc.setTextColor(30,58,95);
+  doc.setFontSize(12);
+  doc.setFont(undefined,'bold');
+  doc.text(`Efetivo total: ${c.militares} militares`, 20, yFinal + 11);
+
+  doc.save(`baixa_${slug(c.companhia)}.pdf`);
+  toast('PDF gerado.', 'ok');
+}
+
+/* ============================================================
+   PDF — GERAL
+   ============================================================ */
+function baixarPdfGeral(){
+  if(!COMPANHIAS.length){ toast('Sem dados para gerar PDF.', 'erro'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+
+  desenharCabecalho(doc, 'Baixa por Companhia — Relatório Completo');
+
+  const data = new Date().toLocaleString('pt-BR');
+  doc.setFontSize(11);
+  doc.setTextColor(60,60,60);
+  doc.text(`Gerado em: ${data}`, 15, 44);
+  doc.text(`Emitido por: ${SESSAO_ATUAL.nome} (${SESSAO_ATUAL.perfil})`, 15, 50);
+
+  const linhas = [['Companhia','Militares','1ª Baixa','2ª Baixa','Baixa EP','Total','Pendentes']];
+  let totalMil=0, totalB1=0, totalB2=0, totalEp=0;
+
+  COMPANHIAS.forEach(c=>{
+    const tot = c.b1 + c.b2 + c.ep;
+    const pend = Math.max(0, c.militares - tot);
+    totalMil += c.militares;
+    totalB1 += c.b1;
+    totalB2 += c.b2;
+    totalEp += c.ep;
+    linhas.push([
+      c.companhia,
+      String(c.militares),
+      String(c.b1),
+      String(c.b2),
+      String(c.ep),
+      String(tot),
+      String(pend)
+    ]);
+  });
+
+  const totalGeral = totalB1 + totalB2 + totalEp;
+  linhas.push([
+    'TOTAL',
+    String(totalMil),
+    String(totalB1),
+    String(totalB2),
+    String(totalEp),
+    String(totalGeral),
+    String(Math.max(0, totalMil - totalGeral))
+  ]);
+
+  desenharTabela(doc, linhas, 60, true);
+
+  const yFinal = 60 + linhas.length * 9 + 6;
+  doc.setFillColor(240,212,107);
+  doc.roundedRect(15, yFinal, 180, 18, 3, 3, 'F');
+  doc.setTextColor(30,58,95);
+  doc.setFontSize(12);
+  doc.setFont(undefined,'bold');
+  doc.text(`Efetivo geral: ${totalMil} militares · ${totalGeral} baixas`, 20, yFinal + 11);
+
+  doc.save(`baixa_companhias_${slug(data)}.pdf`);
+  toast('PDF completo gerado.', 'ok');
+}
+
+/* ============================================================
+   DESENHO DO PDF
+   ============================================================ */
+function desenharCabecalho(doc, subtitulo){
+  // faixa azul
+  doc.setFillColor(30,58,95);
+  doc.rect(0,0,210,32,'F');
+  // linha dourada
+  doc.setFillColor(201,162,39);
+  doc.rect(0,32,210,2,'F');
+
+  // marca
+  doc.setTextColor(255,255,255);
+  doc.setFont(undefined,'bold');
+  doc.setFontSize(22);
+  doc.text('Controle+', 15, 16);
+
+  // subtítulo
+  doc.setFont(undefined,'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(240,212,107);
+  doc.text('SECRETARIA', 15, 22);
+
+  // título
+  doc.setFontSize(14);
+  doc.setTextColor(255,255,255);
+  doc.text(subtitulo, 15, 29);
+}
+
+function desenharTabela(doc, linhas, yInicio, destacarUltima=false){
+  const colWidths = linhas[0].length === 2
+    ? [90, 90]
+    : [40, 24, 22, 22, 22, 22, 26]; // 7 colunas
+
+  let y = yInicio;
+  const rowH = 9;
+
+  linhas.forEach((linha, idx)=>{
+    const ehCabecalho = idx === 0;
+    const ehUltima = destacarUltima && idx === linhas.length - 1;
+
+    if(ehCabecalho){
+      doc.setFillColor(30,58,95);
+    } else if(ehUltima){
+      doc.setFillColor(240,212,107);
+    } else if(idx % 2 === 0){
+      doc.setFillColor(248,250,252);
+    } else {
+      doc.setFillColor(255,255,255);
+    }
+
+    doc.rect(15, y, 180, rowH, 'F');
+
+    doc.setFont(undefined, ehCabecalho || ehUltima ? 'bold' : 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(
+      ehCabecalho ? 255 : 30,
+      ehCabecalho ? 255 : 58,
+      ehCabecalho ? 255 : 95
+    );
+
+    let x = 15;
+    linha.forEach((cel, i)=>{
+      const w = colWidths[i] || 20;
+      doc.text(String(cel), x + 2, y + 6);
+      x += w;
+    });
+
+    // borda inferior
+    doc.setDrawColor(221,228,235);
+    doc.setLineWidth(0.2);
+    doc.line(15, y + rowH, 195, y + rowH);
+
+    y += rowH;
+  });
+}
+
+function slug(txt){
+  return String(txt).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'_')
+    .replace(/^_+|_+$/g,'');
+}
+
+iniciar();
+</script>
+</body>
+</html>

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a5f">
+<title>Controle+ | Usuários</title>
+<style>
+  :root{
+    --azul-escuro:#0a1a2f;--azul:#1e3a5f;--azul-claro:#2f5d8a;
+    --dourado:#c9a227;--dourado-claro:#f0d46b;
+    --cinza:#f4f6f8;--cinza-2:#eef2f6;--borda:#dde4eb;
+    --texto:#1f2a36;--muted:#6b7a8c;
+    --verde:#2e7d32;--vermelho:#c62828;
+    --sombra-sm:0 1px 2px rgba(15,30,50,.04);
+    --sombra-md:0 4px 16px rgba(15,30,50,.06);
+    --raio:12px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;}
+  body{background:var(--cinza);color:var(--texto);min-height:100vh;overflow-x:hidden;
+       animation:entradaPagina .35s cubic-bezier(.2,.8,.2,1);}
+  @keyframes entradaPagina{from{opacity:0;transform:translateX(12px);filter:blur(2px);}to{opacity:1;transform:none;filter:none;}}
+
+  #progresso{position:fixed;top:0;left:0;right:0;height:3px;z-index:9999;pointer-events:none;}
+  #progresso::before{
+    content:"";position:absolute;top:0;left:0;bottom:0;width:0;
+    background:linear-gradient(90deg,var(--azul-claro),var(--dourado-claro),var(--azul-claro));
+    background-size:200% 100%;box-shadow:0 0 14px var(--dourado);
+    border-radius:0 3px 3px 0;animation:progressoGlow 1.2s linear infinite;
+    transition:width .3s ease, opacity .3s;
+  }
+  #progresso.ativa::before{width:75%;}
+  #progresso.completa::before{width:100%;opacity:0;transition:width .25s,opacity .4s .15s;}
+  @keyframes progressoGlow{to{background-position:200% 0;}}
+
+  header{
+    background:linear-gradient(135deg,#16304f 0%,#1e3a5f 50%,#2f5d8a 100%);
+    color:#fff;padding:0 clamp(12px,3vw,28px);
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap;box-shadow:0 4px 20px rgba(10,26,47,.25);
+    position:sticky;top:0;z-index:50;border-bottom:2px solid var(--dourado);min-height:64px;
+  }
+  .logo{display:flex;align-items:baseline;gap:0;padding:10px 0;line-height:1;flex-shrink:0;}
+  .logo .marca{font-size:clamp(18px,4.5vw,24px);font-weight:900;color:#fff;}
+  .logo .marca span{color:var(--dourado-claro);text-shadow:0 0 16px rgba(201,162,39,.6);}
+  .logo .tag-sec{display:inline-block;margin-left:10px;padding:2px 8px;border-radius:4px;font-size:8px;font-weight:800;letter-spacing:2px;background:rgba(201,162,39,.15);border:1px solid rgba(201,162,39,.4);color:var(--dourado-claro);vertical-align:middle;position:relative;top:-2px;}
+  nav{display:flex;align-items:center;gap:2px;flex:1;justify-content:center;overflow-x:auto;scrollbar-width:none;}
+  nav::-webkit-scrollbar{display:none;}
+  nav a{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.75);text-decoration:none;white-space:nowrap;transition:.2s;position:relative;text-transform:uppercase;cursor:pointer;}
+  nav a:hover{color:#fff;background:rgba(255,255,255,.08);}
+  nav a.ativo{color:var(--dourado-claro);background:rgba(201,162,39,.12);}
+  nav a.ativo::after{content:"";position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);width:60%;height:2px;background:var(--dourado);border-radius:2px;box-shadow:0 0 8px var(--dourado);}
+  .menu-toggle{display:none;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:#fff;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;align-items:center;justify-content:center;flex-shrink:0;}
+  .user-info{display:flex;align-items:center;gap:10px;padding:10px 0;flex-shrink:0;}
+  .user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,rgba(201,162,39,.3),rgba(201,162,39,.15));border:1.5px solid rgba(201,162,39,.6);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--dourado-claro);}
+  .user-meta{display:flex;flex-direction:column;line-height:1.2;}
+  .user-meta .nome{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+  .user-meta .papel{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dourado-claro);}
+  .btn-sair{background:transparent;border:1px solid #ffffff44;color:#fff;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:1px;transition:.2s;}
+  .btn-sair:hover{background:#ffffff1f;}
+
+  .container{max-width:1200px;margin:0 auto;padding:clamp(14px,3vw,28px);}
+  .titulo-pagina{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+  .titulo-pagina h1{font-size:clamp(18px,4vw,24px);color:var(--azul);font-weight:900;}
+  .titulo-pagina h1 small{display:block;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px;}
+  .btn-novo{background:linear-gradient(135deg,var(--dourado-claro),var(--dourado));color:var(--azul-escuro);border:none;padding:10px 16px;border-radius:9px;font-size:12px;font-weight:800;letter-spacing:.5px;cursor:pointer;box-shadow:0 6px 20px rgba(201,162,39,.3);transition:.2s;}
+  .btn-novo:hover{transform:translateY(-1px);}
+
+  .painel{background:#fff;border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra-sm);overflow:hidden;margin-bottom:22px;}
+  .painel-head{padding:14px 18px;border-bottom:1px solid var(--borda);background:linear-gradient(180deg,#f8fafc,#eef2f6);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .painel-head h2{font-size:12px;color:var(--azul);font-weight:800;letter-spacing:1px;text-transform:uppercase;}
+  .painel-head .contagem{font-size:11px;color:var(--muted);font-weight:700;background:#fff;padding:3px 10px;border-radius:20px;border:1px solid var(--borda);}
+
+  .tabela-scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px;}
+  th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--borda);}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:800;color:var(--muted);white-space:nowrap;background:#f8fafc;}
+  tbody tr:hover{background:#f4f8fc;}
+  tbody tr:last-child td{border-bottom:none;}
+
+  .user-cell{display:flex;align-items:center;gap:10px;}
+  .user-avatar-lista{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--azul-claro),var(--azul));color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .user-cell-txt .n{font-weight:700;}
+  .user-cell-txt .u{font-size:11px;color:var(--muted);}
+
+  .badge-perfil{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;}
+  .badge-perfil.gerente{background:#fff3e0;color:#a05000;border:1px solid #ffe0b2;}
+  .badge-perfil.auxiliar{background:#e3f2fd;color:#0d47a1;border:1px solid #bbdefb;}
+
+  .badge-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;}
+  .badge-status::before{content:"";width:8px;height:8px;border-radius:50%;}
+  .badge-status.ativo::before{background:var(--verde);box-shadow:0 0 6px var(--verde);}
+  .badge-status.ativo{color:var(--verde);}
+  .badge-status.inativo::before{background:var(--vermelho);}
+  .badge-status.inativo{color:var(--vermelho);}
+
+  .acoes-linha{display:flex;gap:6px;flex-wrap:wrap;}
+  .btn-mini{padding:6px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:.2s;}
+  .btn-mini.editar{background:#e3f2fd;color:#0d47a1;border-color:#bbdefb;}
+  .btn-mini.editar:hover{background:#bbdefb;}
+  .btn-mini.toggle{background:#fff8e1;color:#8a6100;border-color:#ffe082;}
+  .btn-mini.toggle:hover{background:#ffe082;}
+  .btn-mini.excluir{background:#ffebee;color:#b71c1c;border-color:#ffcdd2;}
+  .btn-mini.excluir:hover{background:#ffcdd2;}
+
+  .overlay{position:fixed;inset:0;background:rgba(10,26,47,.7);display:none;align-items:flex-start;justify-content:center;padding:clamp(10px,3vw,40px) clamp(8px,3vw,20px);z-index:100;overflow-y:auto;backdrop-filter:blur(6px);}
+  .overlay.ativo{display:flex;animation:fadeIn .25s;}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  .modal-form{background:#fff;border-radius:16px;width:100%;max-width:520px;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden;animation:subir .3s;}
+  @keyframes subir{from{transform:translateY(30px) scale(.97);opacity:0;}to{transform:none;opacity:1;}}
+  .modal-head{background:linear-gradient(135deg,#16304f,#1e3a5f 60%,#2f5d8a);color:#fff;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px;position:relative;}
+  .modal-head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--dourado),transparent);}
+  .modal-head h2{font-size:16px;font-weight:800;}
+  .fechar{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0;}
+  .fechar:hover{background:rgba(255,255,255,.25);transform:rotate(90deg);}
+
+  .form-body{padding:20px 22px;display:grid;gap:12px;}
+  .form-body label{display:block;font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:1px;font-weight:800;margin-bottom:5px;}
+  .form-body input,.form-body select{width:100%;padding:11px 13px;border:1px solid var(--borda);border-radius:9px;font-size:13px;background:var(--cinza);outline:none;transition:.2s;font-family:inherit;}
+  .form-body input:focus,.form-body select:focus{border-color:var(--azul-claro);box-shadow:0 0 0 3px rgba(47,93,138,.12);background:#fff;}
+
+  .form-erro{background:#ffebee;border:1px solid #ffcdd2;color:#b71c1c;padding:10px 12px;border-radius:8px;font-size:12px;display:none;}
+  .form-erro.ativo{display:block;}
+
+  .form-acoes{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:14px 22px 20px;border-top:1px solid var(--borda);background:#fafbfc;}
+  .btn-form{padding:10px 16px;border-radius:9px;font-size:12px;font-weight:800;cursor:pointer;border:none;transition:.2s;letter-spacing:.4px;}
+  .btn-form.cancelar{background:var(--cinza);color:var(--muted);border:1px solid var(--borda);}
+  .btn-form.salvar{background:linear-gradient(135deg,var(--dourado-claro),var(--dourado));color:var(--azul-escuro);}
+  .btn-form.salvar:hover{transform:translateY(-1px);}
+
+  .vazio{text-align:center;padding:28px;color:var(--muted);font-style:italic;font-size:13px;}
+
+  /* ============================================================
+     BLOCO DE BACKUP E SOBRE
+     ============================================================ */
+  .bloco-backup{
+    display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-bottom:22px;
+  }
+  @media(max-width:720px){
+    .bloco-backup{grid-template-columns:1fr;}
+  }
+
+  .card-info{
+    background:#fff;border:1px solid var(--borda);border-radius:var(--raio);
+    box-shadow:var(--sombra-sm);overflow:hidden;
+  }
+  .card-info-head{
+    padding:14px 18px;border-bottom:1px solid var(--borda);
+    background:linear-gradient(180deg,#f8fafc,#eef2f6);
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+  }
+  .card-info-head h2{
+    font-size:12px;color:var(--azul);font-weight:800;letter-spacing:1px;text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;
+  }
+  .card-info-head h2::before{
+    content:"";width:4px;height:14px;background:var(--dourado);border-radius:2px;
+  }
+  .card-info-body{padding:18px;font-size:13px;color:var(--texto);line-height:1.6;}
+  .card-info-body p{margin-bottom:8px;}
+  .card-info-body p:last-child{margin-bottom:0;}
+  .card-info-body b{color:var(--azul);font-weight:800;}
+
+  .btn-backup{
+    background:linear-gradient(135deg,#e3f2fd,#bbdefb);
+    color:#0d47a1;border:1px solid #90caf9;
+    padding:12px 18px;border-radius:10px;font-size:13px;font-weight:800;
+    cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:8px;
+    margin-top:10px;
+  }
+  .btn-backup:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(13,71,161,.2);}
+  .btn-backup:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:none;}
+
+  .info-linha{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:12px;padding:6px 0;border-bottom:1px dashed var(--borda);gap:8px;
+  }
+  .info-linha:last-child{border-bottom:none;}
+  .info-linha span:first-child{color:var(--muted);font-weight:600;}
+  .info-linha span:last-child{font-weight:800;color:var(--azul);}
+
+  /* ============================================================
+     RODAPÉ DE CRÉDITOS
+     ============================================================ */
+  .rodape-creditos{
+    margin-top:34px;
+    background:linear-gradient(135deg,#16304f,#1e3a5f 60%,#2f5d8a);
+    color:#fff;border-radius:var(--raio);overflow:hidden;
+    box-shadow:0 12px 30px rgba(10,26,47,.25);
+    position:relative;
+  }
+  .rodape-creditos::after{
+    content:"";position:absolute;left:0;right:0;top:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--dourado),transparent);
+  }
+  .rodape-creditos-inner{
+    padding:24px 22px;display:grid;gap:14px;
+    grid-template-columns:1fr 1fr;align-items:center;
+  }
+  @media(max-width:720px){
+    .rodape-creditos-inner{grid-template-columns:1fr;text-align:center;}
+  }
+
+  .creditos-marca{
+    display:flex;align-items:center;gap:14px;
+  }
+  @media(max-width:720px){
+    .creditos-marca{justify-content:center;}
+  }
+  .creditos-simbolo{
+    width:48px;height:48px;border-radius:12px;
+    background:linear-gradient(135deg,var(--dourado),var(--dourado-claro));
+    color:var(--azul-escuro);font-weight:900;font-size:22px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 20px rgba(201,162,39,.4);
+    flex-shrink:0;
+  }
+  .creditos-marca .nome-sistema{
+    font-size:20px;font-weight:900;letter-spacing:.3px;line-height:1.1;
+  }
+  .creditos-marca .nome-sistema span{color:var(--dourado-claro);}
+  .creditos-marca .versao{
+    font-size:11px;color:rgba(255,255,255,.7);letter-spacing:2px;
+    text-transform:uppercase;margin-top:4px;font-weight:700;
+  }
+
+  .creditos-info{
+    font-size:12px;line-height:1.7;color:rgba(255,255,255,.85);
+    text-align:right;
+  }
+  @media(max-width:720px){
+    .creditos-info{text-align:center;}
+  }
+  .creditos-info b{color:var(--dourado-claro);font-weight:800;}
+
+  .linha-creditos-final{
+    padding:12px 22px;border-top:1px solid rgba(255,255,255,.12);
+    font-size:10px;color:rgba(255,255,255,.55);letter-spacing:1.5px;
+    text-transform:uppercase;text-align:center;
+    background:rgba(0,0,0,.15);
+  }
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--azul-escuro);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.35);z-index:9500;transition:transform .3s;max-width:calc(100vw - 32px);}
+  .toast.ativo{transform:translateX(-50%) translateY(0);}
+  .toast.erro{background:var(--vermelho);}
+  .toast.ok{background:var(--verde);}
+
+  .carregando{position:fixed;inset:0;background:var(--azul-escuro);display:flex;align-items:center;justify-content:center;z-index:9999;color:#fff;font-size:12px;letter-spacing:3px;text-transform:uppercase;gap:14px;font-weight:700;padding:20px;text-align:center;}
+  .carregando::after{content:"";width:28px;height:28px;border:3px solid #ffffff22;border-top-color:var(--dourado-claro);border-radius:50%;animation:gira .8s linear infinite;flex-shrink:0;}
+  @keyframes gira{to{transform:rotate(360deg);}}
+
+  @media(max-width:900px){
+    .menu-toggle{display:flex;}
+    nav{position:absolute;top:100%;left:0;right:0;background:linear-gradient(180deg,#16304f,#1e3a5f);flex-direction:column;align-items:stretch;padding:0 8px;gap:2px;flex:initial;box-shadow:0 8px 24px rgba(0,0,0,.3);border-bottom:2px solid var(--dourado);max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;overflow-y:auto;}
+    nav.aberto{max-height:80vh;padding:8px;}
+    nav a{padding:12px 16px;justify-content:flex-start;font-size:13px;}
+    nav a.ativo::after{display:none;}
+    nav a.ativo{background:rgba(201,162,39,.18);border-left:3px solid var(--dourado);}
+  }
+  @media(max-width:560px){
+    .logo .tag-sec{display:none;}
+    .user-meta{display:none;}
+    .btn-sair{padding:6px 10px;font-size:10px;}
+    .titulo-pagina h1{font-size:18px;}
+    th,td{padding:10px 12px;}
+    .form-body{padding:16px;}
+    .form-acoes{padding:12px 16px 16px;}
+  }
+  @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important;}body{animation:none !important;}}
+</style>
+</head>
+<body>
+
+<div class="carregando" id="carregando">Verificando acesso</div>
+<div id="progresso"></div>
+
+<header>
+  <div class="logo">
+    <div class="marca">Controle<span>+</span></div>
+    <span class="tag-sec">SECRETARIA</span>
+  </div>
+  <button class="menu-toggle" onclick="toggleNav()" aria-label="Menu">&#9776;</button>
+  <nav id="navPrincipal">
+    <a onclick="irPara('sistema.html')">Painel</a>
+    <a onclick="irPara('cadastro.html')">Cadastro</a>
+    <a onclick="irPara('historico.html')">Histórico</a>
+    <a onclick="irPara('baixa.html')">Baixa</a>
+    <a class="ativo">Usuários</a>
+  </nav>
+  <div class="user-info">
+    <div class="user-avatar" id="avatarUsuario">?</div>
+    <div class="user-meta">
+      <span class="nome" id="nomeUsuario">—</span>
+      <span class="papel" id="papelUsuario">—</span>
+    </div>
+    <button class="btn-sair" onclick="logout()">SAIR</button>
+  </div>
+</header>
+
+<div class="container" id="app" style="display:none;">
+  <div class="titulo-pagina">
+    <h1>Usuários<small>Gestão de acessos ao sistema</small></h1>
+    <button class="btn-novo" onclick="abrirFormNovo()">+ NOVO USUÁRIO</button>
+  </div>
+
+  <!-- Painel de usuários -->
+  <div class="painel">
+    <div class="painel-head">
+      <h2>Contas cadastradas</h2>
+      <span class="contagem" id="contagemUsuarios">0</span>
+    </div>
+    <div class="tabela-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuário</th><th>Login</th><th>Perfil</th><th>Status</th><th>Criado</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpoUsuarios"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Backup + Sobre -->
+  <div class="bloco-backup">
+    <div class="card-info">
+      <div class="card-info-head">
+        <h2>Backup do sistema</h2>
+      </div>
+      <div class="card-info-body">
+        <p>
+          Baixe uma cópia completa do banco de dados (<b>controleplus.db</b>) com
+          <b>usuários</b>, <b>militares</b>, <b>pedidos</b>, <b>histórico</b> e <b>baixa por companhia</b>.
+        </p>
+        <p>
+          O arquivo baixado pode ser restaurado substituindo o <b>controleplus.db</b> na pasta do sistema.
+          Recomendado fazer backup <b>diariamente</b> ou antes de qualquer manutenção.
+        </p>
+        <button class="btn-backup" id="btnBackup" onclick="baixarBackup()">
+          BAIXAR BACKUP (.DB)
+        </button>
+      </div>
+    </div>
+
+    <div class="card-info">
+      <div class="card-info-head">
+        <h2>Informações do sistema</h2>
+      </div>
+      <div class="card-info-body">
+        <div class="info-linha"><span>Versão</span><span id="infoVersao">1.0.0</span></div>
+        <div class="info-linha"><span>Banco de dados</span><span>SQLite</span></div>
+        <div class="info-linha"><span>Backend</span><span>Flask (Python)</span></div>
+        <div class="info-linha"><span>Usuários cadastrados</span><span id="infoUsuarios">—</span></div>
+        <div class="info-linha"><span>Última atualização</span><span>09/11/2026</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RODAPÉ DE CRÉDITOS -->
+  <footer class="rodape-creditos">
+    <div class="rodape-creditos-inner">
+      <div class="creditos-marca">
+        <div class="creditos-simbolo">C+</div>
+        <div>
+          <div class="nome-sistema">Controle<span>+</span></div>
+          <div class="versao">Sistema da Secretaria · v1.0.0</div>
+        </div>
+      </div>
+      <div class="creditos-info">
+        Desenvolvido por <b>Paulo Tomaz</b><br>
+        <span style="font-size:11px;opacity:.75;">Contato: pauloryan9888@gmail.com</span><br>
+        <span style="font-size:11px;opacity:.75;">© 2026 — Todos os direitos reservados</span>
+      </div>
+    </div>
+    <div class="linha-creditos-final">
+      Controle+ · Sistema de gestão de pedidos e baixas da Secretaria
+    </div>
+  </footer>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlayForm" onclick="if(event.target===this)fecharForm()">
+  <div class="modal-form">
+    <div class="modal-head">
+      <h2 id="formTitulo">Novo usuário</h2>
+      <button class="fechar" onclick="fecharForm()" aria-label="Fechar">&times;</button>
+    </div>
+    <form id="formUsuario" onsubmit="event.preventDefault(); salvarForm()">
+      <div class="form-body">
+        <div class="form-erro" id="formErro"></div>
+        <div>
+          <label for="fNome">Nome completo</label>
+          <input type="text" id="fNome" required placeholder="Ex.: João da Silva">
+        </div>
+        <div>
+          <label for="fUsuario">Login</label>
+          <input type="text" id="fUsuario" required placeholder="Ex.: joao.silva" autocomplete="off">
+        </div>
+        <div>
+          <label for="fSenha">Senha</label>
+          <input type="text" id="fSenha" required placeholder="Mínimo 4 caracteres" autocomplete="off">
+        </div>
+        <div>
+          <label for="fPerfil">Perfil</label>
+          <select id="fPerfil" required>
+            <option value="auxiliar">Auxiliar</option>
+            <option value="gerente">Gerente</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-acoes">
+        <button type="button" class="btn-form cancelar" onclick="fecharForm()">CANCELAR</button>
+        <button type="submit" class="btn-form salvar">SALVAR</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+async function api(url, opts={}){
+  const resp = await fetch(url, {
+    headers: {'Content-Type':'application/json'},
+    credentials: 'same-origin',
+    ...opts
+  });
+  return await resp.json();
+}
+function toast(msg, tipo){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ativo ' + (tipo || 'ok');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=> el.classList.remove('ativo'), 2800);
+}
+function toggleNav(){ document.getElementById('navPrincipal').classList.toggle('aberto'); }
+document.addEventListener('click', e=>{
+  const nav = document.getElementById('navPrincipal');
+  const btn = document.querySelector('.menu-toggle');
+  if(nav.classList.contains('aberto') && !nav.contains(e.target) && !btn.contains(e.target)){
+    nav.classList.remove('aberto');
+  }
+});
+function iniciais(nome){
+  const p = nome.trim().split(/\s+/);
+  if(p.length === 1) return p[0].charAt(0).toUpperCase();
+  return (p[0].charAt(0) + p[p.length-1].charAt(0)).toUpperCase();
+}
+function formatarData(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if(isNaN(d)) return iso;
+  return d.toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function progressoInicio(){
+  const p = document.getElementById('progresso');
+  p.classList.remove('completa'); void p.offsetWidth; p.classList.add('ativa');
+}
+function progressoFim(){
+  const p = document.getElementById('progresso');
+  p.classList.remove('ativa'); p.classList.add('completa');
+  setTimeout(()=> p.classList.remove('completa'), 500);
+}
+async function logout(){
+  try{ await fetch('/api/logout', {method:'POST', credentials:'same-origin'}); }catch(e){}
+  document.body.style.transition = 'opacity .25s';
+  document.body.style.opacity = 0;
+  setTimeout(()=> window.location.href = '/', 250);
+}
+function irPara(url){
+  progressoInicio();
+  document.body.style.transition = 'opacity .25s, transform .25s, filter .25s';
+  document.body.style.opacity = 0;
+  document.body.style.transform = 'translateX(-12px)';
+  document.body.style.filter = 'blur(2px)';
+  setTimeout(()=> window.location.href = url, 200);
+}
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let SESSAO_ATUAL = null;
+let USUARIOS = [];
+let editandoId = null;
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function iniciar(){
+  try{
+    const r = await api('/api/sessao');
+    if(!r.ok){ window.location.href = '/'; return; }
+    if(r.usuario.perfil !== 'gerente'){ window.location.href = '/sistema.html'; return; }
+    SESSAO_ATUAL = r.usuario;
+
+    document.getElementById('nomeUsuario').textContent = SESSAO_ATUAL.nome;
+    document.getElementById('papelUsuario').textContent = 'Gerente';
+    document.getElementById('avatarUsuario').textContent = SESSAO_ATUAL.nome.charAt(0).toUpperCase();
+
+    await carregarUsuarios();
+
+    document.getElementById('carregando').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }catch(e){
+    console.error(e);
+    window.location.href = '/';
+  }
+}
+
+async function carregarUsuarios(){
+  progressoInicio();
+  const r = await api('/api/usuarios');
+  USUARIOS = r.ok ? r.usuarios : [];
+  renderUsuarios();
+  document.getElementById('infoUsuarios').textContent = USUARIOS.length;
+  progressoFim();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderUsuarios(){
+  const corpo = document.getElementById('corpoUsuarios');
+  corpo.innerHTML = '';
+  document.getElementById('contagemUsuarios').textContent =
+    USUARIOS.length + (USUARIOS.length === 1 ? ' usuário' : ' usuários');
+
+  if(!USUARIOS.length){
+    corpo.innerHTML = '<tr><td colspan="6" class="vazio">Nenhum usuário cadastrado.</td></tr>';
+    return;
+  }
+
+  USUARIOS.forEach(u=>{
+    const euMesmo = SESSAO_ATUAL && SESSAO_ATUAL.id === u.id;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div class="user-cell">
+          <div class="user-avatar-lista">${iniciais(u.nome)}</div>
+          <div class="user-cell-txt">
+            <div class="n">${u.nome}${euMesmo ? ' <span style="font-size:10px;color:#6b7a8c;font-weight:700;">(você)</span>' : ''}</div>
+            <div class="u">${u.criado_por ? 'criado por ' + u.criado_por : ''}</div>
+          </div>
+        </div>
+      </td>
+      <td>${u.usuario}</td>
+      <td><span class="badge-perfil ${u.perfil}">${u.perfil === 'gerente' ? 'Gerente' : 'Auxiliar'}</span></td>
+      <td><span class="badge-status ${u.ativo ? 'ativo' : 'inativo'}">${u.ativo ? 'Ativo' : 'Inativo'}</span></td>
+      <td style="font-size:12px;color:var(--muted);">${formatarData(u.criado_em)}</td>
+      <td>
+        <div class="acoes-linha">
+          <button class="btn-mini editar" onclick="abrirFormEditar(${u.id})">Editar</button>
+          <button class="btn-mini toggle" onclick="toggleAtivo(${u.id})">${u.ativo ? 'Desativar' : 'Ativar'}</button>
+          <button class="btn-mini excluir" onclick="excluir(${u.id})">Excluir</button>
+        </div>
+      </td>`;
+    corpo.appendChild(tr);
+  });
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+function abrirFormNovo(){
+  editandoId = null;
+  document.getElementById('formTitulo').textContent = 'Novo usuário';
+  document.getElementById('formUsuario').reset();
+  document.getElementById('formErro').classList.remove('ativo');
+  const fSenha = document.getElementById('fSenha');
+  fSenha.required = true;
+  fSenha.placeholder = 'Mínimo 4 caracteres';
+  document.getElementById('overlayForm').classList.add('ativo');
+}
+
+function abrirFormEditar(id){
+  const u = USUARIOS.find(x=>x.id===id);
+  if(!u) return;
+  editandoId = id;
+  document.getElementById('formTitulo').textContent = 'Editar usuário';
+  document.getElementById('fNome').value = u.nome;
+  document.getElementById('fUsuario').value = u.usuario;
+  const fSenha = document.getElementById('fSenha');
+  fSenha.value = '';
+  fSenha.required = false;
+  fSenha.placeholder = 'Deixe em branco para não alterar';
+  document.getElementById('fPerfil').value = u.perfil;
+  document.getElementById('formErro').classList.remove('ativo');
+  document.getElementById('overlayForm').classList.add('ativo');
+}
+
+function fecharForm(){
+  document.getElementById('overlayForm').classList.remove('ativo');
+  editandoId = null;
+}
+
+function mostrarErro(msg){
+  const el = document.getElementById('formErro');
+  el.textContent = msg;
+  el.classList.add('ativo');
+}
+
+async function salvarForm(){
+  const nome = document.getElementById('fNome').value.trim();
+  const usuario = document.getElementById('fUsuario').value.trim();
+  const senha = document.getElementById('fSenha').value.trim();
+  const perfil = document.getElementById('fPerfil').value;
+
+  progressoInicio();
+  let r;
+  if(editandoId){
+    r = await api('/api/usuarios/' + editandoId, {
+      method: 'PUT',
+      body: JSON.stringify({nome, usuario, senha, perfil})
+    });
+  } else {
+    r = await api('/api/usuarios', {
+      method: 'POST',
+      body: JSON.stringify({nome, usuario, senha, perfil})
+    });
+  }
+  progressoFim();
+
+  if(!r.ok){ mostrarErro(r.erro); return; }
+
+  toast(editandoId ? 'Usuário atualizado.' : 'Usuário criado.', 'ok');
+  fecharForm();
+  await carregarUsuarios();
+}
+
+async function toggleAtivo(id){
+  progressoInicio();
+  const r = await api('/api/usuarios/' + id + '/toggle', {method:'POST'});
+  progressoFim();
+  if(!r.ok){ toast(r.erro, 'erro'); return; }
+  toast(r.ativo ? 'Usuário ativado.' : 'Usuário desativado.', 'ok');
+  await carregarUsuarios();
+}
+
+async function excluir(id){
+  if(!confirm('Tem certeza que deseja excluir este usuário?')) return;
+  progressoInicio();
+  const r = await api('/api/usuarios/' + id, {method:'DELETE'});
+  progressoFim();
+  if(!r.ok){ toast(r.erro, 'erro'); return; }
+  toast('Usuário excluído.', 'ok');
+  await carregarUsuarios();
+}
+
+document.addEventListener('keydown', e=>{ if(e.key === 'Escape') fecharForm(); });
+
+/* ============================================================
+   BACKUP
+   ============================================================ */
+async function baixarBackup(){
+  const btn = document.getElementById('btnBackup');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Gerando backup...';
+
+  progressoInicio();
+  try{
+    const resp = await fetch('/api/backup', { credentials: 'same-origin' });
+    if(!resp.ok){
+      throw new Error('Falha ao gerar backup.');
+    }
+    const blob = await resp.blob();
+    const hoje = new Date().toISOString().slice(0,10);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `controleplus_backup_${hoje}.db`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Backup baixado com sucesso.', 'ok');
+  }catch(err){
+    toast(err.message || 'Erro ao baixar backup.', 'erro');
+  }finally{
+    progressoFim();
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+iniciar();
+</script>
+</body>
+</html>

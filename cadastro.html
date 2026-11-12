@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a5f">
+<title>Controle+ | Cadastro</title>
+<style>
+  :root{
+    --azul-escuro:#0a1a2f;--azul:#1e3a5f;--azul-claro:#2f5d8a;
+    --dourado:#c9a227;--dourado-claro:#f0d46b;
+    --cinza:#f4f6f8;--cinza-2:#eef2f6;--borda:#dde4eb;
+    --texto:#1f2a36;--muted:#6b7a8c;
+    --verde:#2e7d32;--amarelo:#f9a825;--vermelho:#c62828;--roxo:#6a1b9a;
+    --sombra-sm:0 1px 2px rgba(15,30,50,.04);
+    --sombra-md:0 4px 16px rgba(15,30,50,.06);
+    --raio:12px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;}
+  html,body{-webkit-text-size-adjust:100%;}
+  body{background:var(--cinza);color:var(--texto);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+       animation:entradaPagina .35s cubic-bezier(.2,.8,.2,1);}
+  @keyframes entradaPagina{from{opacity:0;transform:translateX(12px);filter:blur(2px);}to{opacity:1;transform:none;filter:none;}}
+
+  #progresso{position:fixed;top:0;left:0;right:0;height:3px;z-index:9999;pointer-events:none;}
+  #progresso::before{
+    content:"";position:absolute;top:0;left:0;bottom:0;width:0;
+    background:linear-gradient(90deg,var(--azul-claro),var(--dourado-claro),var(--azul-claro));
+    background-size:200% 100%;box-shadow:0 0 14px var(--dourado),0 0 28px rgba(201,162,39,.5);
+    border-radius:0 3px 3px 0;animation:progressoGlow 1.2s linear infinite;
+    transition:width .3s ease, opacity .3s;
+  }
+  #progresso.ativa::before{width:75%;}
+  #progresso.completa::before{width:100%;opacity:0;transition:width .25s ease, opacity .4s ease .15s;}
+  @keyframes progressoGlow{to{background-position:200% 0;}}
+
+  header{
+    background:linear-gradient(135deg,#16304f 0%,#1e3a5f 50%,#2f5d8a 100%);
+    color:#fff;padding:0 clamp(12px,3vw,28px);
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex-wrap:wrap;box-shadow:0 4px 20px rgba(10,26,47,.25);
+    position:sticky;top:0;z-index:50;border-bottom:2px solid var(--dourado);min-height:64px;
+  }
+  .logo{display:flex;align-items:baseline;gap:0;padding:10px 0;line-height:1;flex-shrink:0;}
+  .logo .marca{font-size:clamp(18px,4.5vw,24px);font-weight:900;letter-spacing:.3px;color:#fff;}
+  .logo .marca span{color:var(--dourado-claro);text-shadow:0 0 16px rgba(201,162,39,.6);}
+  .logo .tag-sec{display:inline-block;margin-left:10px;padding:2px 8px;border-radius:4px;font-size:8px;font-weight:800;letter-spacing:2px;background:rgba(201,162,39,.15);border:1px solid rgba(201,162,39,.4);color:var(--dourado-claro);vertical-align:middle;position:relative;top:-2px;}
+  nav{display:flex;align-items:center;gap:2px;flex:1;justify-content:center;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  nav::-webkit-scrollbar{display:none;}
+  nav a{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.75);text-decoration:none;white-space:nowrap;transition:.2s;position:relative;text-transform:uppercase;cursor:pointer;}
+  nav a:hover{color:#fff;background:rgba(255,255,255,.08);}
+  nav a.ativo{color:var(--dourado-claro);background:rgba(201,162,39,.12);}
+  nav a.ativo::after{content:"";position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);width:60%;height:2px;background:var(--dourado);border-radius:2px;box-shadow:0 0 8px var(--dourado);}
+  .menu-toggle{display:none;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:#fff;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;align-items:center;justify-content:center;flex-shrink:0;transition:.2s;}
+  .menu-toggle:hover{background:rgba(255,255,255,.2);}
+  .user-info{display:flex;align-items:center;gap:10px;padding:10px 0;flex-shrink:0;}
+  .user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,rgba(201,162,39,.3),rgba(201,162,39,.15));border:1.5px solid rgba(201,162,39,.6);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--dourado-claro);letter-spacing:.5px;flex-shrink:0;}
+  .user-meta{display:flex;flex-direction:column;line-height:1.2;min-width:0;}
+  .user-meta .nome{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+  .user-meta .papel{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dourado-claro);}
+  .btn-sair{background:transparent;border:1px solid #ffffff44;color:#fff;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:1px;transition:.2s;flex-shrink:0;}
+  .btn-sair:hover{background:#ffffff1f;border-color:#ffffff88;transform:translateY(-1px);}
+
+  .container{max-width:1320px;margin:0 auto;padding:clamp(14px,3vw,28px);}
+
+  .titulo-pagina{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+  .titulo-pagina h1{font-size:clamp(18px,4vw,24px);color:var(--azul);font-weight:900;}
+  .titulo-pagina h1 small{display:block;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px;}
+
+  .titulo-acoes{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn-novo{background:linear-gradient(135deg,var(--dourado-claro),var(--dourado));color:var(--azul-escuro);border:none;padding:10px 16px;border-radius:9px;font-size:12px;font-weight:800;letter-spacing:.5px;cursor:pointer;box-shadow:0 6px 20px rgba(201,162,39,.3);transition:.2s;white-space:nowrap;}
+  .btn-novo:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(201,162,39,.45);}
+  .btn-novo.sec{background:linear-gradient(135deg,var(--azul-claro),var(--azul));color:#fff;box-shadow:0 6px 20px rgba(47,93,138,.3);}
+  .btn-novo.sec:hover{box-shadow:0 10px 26px rgba(47,93,138,.45);}
+
+  .painel{background:#fff;border:1px solid var(--borda);border-radius:var(--raio);box-shadow:var(--sombra-sm);overflow:hidden;margin-bottom:22px;}
+  .painel-head{padding:14px 18px;border-bottom:1px solid var(--borda);background:linear-gradient(180deg,#f8fafc,#eef2f6);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .painel-head h2{font-size:12px;color:var(--azul);font-weight:800;letter-spacing:1px;text-transform:uppercase;}
+  .painel-head .contagem{font-size:11px;color:var(--muted);font-weight:700;background:#fff;padding:3px 10px;border-radius:20px;border:1px solid var(--borda);}
+
+  .barra-busca{padding:12px 16px;border-bottom:1px solid var(--borda);display:flex;gap:8px;flex-wrap:wrap;}
+  .barra-busca input{flex:1 1 240px;padding:10px 12px;border:1px solid var(--borda);border-radius:9px;font-size:13px;background:var(--cinza);color:var(--texto);outline:none;transition:.2s;}
+  .barra-busca input:focus{border-color:var(--azul-claro);box-shadow:0 0 0 3px rgba(47,93,138,.12);background:#fff;}
+
+  .tabela-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:680px;}
+  th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--borda);}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:800;color:var(--muted);white-space:nowrap;background:#f8fafc;}
+  tbody tr:hover{background:#f4f8fc;}
+  tbody tr:last-child td{border-bottom:none;}
+
+  .militar-cell{display:flex;align-items:center;gap:10px;}
+  .avatar-mini{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--azul-claro),var(--azul));color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .militar-cell-txt .n{font-weight:700;color:var(--texto);}
+  .militar-cell-txt .p{font-size:10px;color:var(--azul-claro);text-transform:uppercase;letter-spacing:1px;font-weight:800;}
+  .badge-num{display:inline-block;min-width:24px;padding:2px 8px;border-radius:20px;background:var(--azul);color:#fff;font-weight:800;font-size:11px;text-align:center;}
+
+  .acoes-linha{display:flex;gap:6px;flex-wrap:wrap;}
+  .btn-mini{padding:6px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:.2s;white-space:nowrap;}
+  .btn-mini.ver{background:#e3f2fd;color:#0d47a1;border-color:#bbdefb;}
+  .btn-mini.ver:hover{background:#bbdefb;}
+  .btn-mini.editar{background:#fff8e1;color:#8a6100;border-color:#ffe082;}
+  .btn-mini.editar:hover{background:#ffe082;}
+  .btn-mini.excluir{background:#ffebee;color:#b71c1c;border-color:#ffcdd2;}
+  .btn-mini.excluir:hover{background:#ffcdd2;}
+
+  .overlay{position:fixed;inset:0;background:rgba(10,26,47,.7);display:none;align-items:flex-start;justify-content:center;padding:clamp(10px,3vw,40px) clamp(8px,3vw,20px);z-index:100;overflow-y:auto;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+  .overlay.ativo{display:flex;animation:fadeIn .25s;}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  .modal-form{background:#fff;border-radius:16px;width:100%;max-width:640px;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden;animation:subir .3s;}
+  .modal-form.larga{max-width:860px;}
+  @keyframes subir{from{transform:translateY(30px) scale(.97);opacity:0;}to{transform:none;opacity:1;}}
+  .modal-head{background:linear-gradient(135deg,#16304f,#1e3a5f 60%,#2f5d8a);color:#fff;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px;position:relative;}
+  .modal-head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--dourado),transparent);}
+  .modal-head h2{font-size:16px;font-weight:800;}
+  .fechar{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0;}
+  .fechar:hover{background:rgba(255,255,255,.25);transform:rotate(90deg);}
+
+  .form-body{padding:20px 22px;display:grid;gap:12px;}
+  .form-body label{display:block;font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:1px;font-weight:800;margin-bottom:5px;}
+  .form-body input,.form-body select{width:100%;padding:11px 13px;border:1px solid var(--borda);border-radius:9px;font-size:13px;background:var(--cinza);color:var(--texto);outline:none;transition:.2s;font-family:inherit;}
+  .form-body input:focus,.form-body select:focus{border-color:var(--azul-claro);box-shadow:0 0 0 3px rgba(47,93,138,.12);background:#fff;}
+  .form-linha-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .form-linha-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  @media(max-width:560px){
+    .form-linha-2,.form-linha-3{grid-template-columns:1fr;}
+  }
+
+  .form-erro{background:#ffebee;border:1px solid #ffcdd2;color:#b71c1c;padding:10px 12px;border-radius:8px;font-size:12px;display:none;}
+  .form-erro.ativo{display:block;}
+
+  .form-acoes{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:14px 22px 20px;border-top:1px solid var(--borda);background:#fafbfc;}
+  .btn-form{padding:10px 16px;border-radius:9px;font-size:12px;font-weight:800;cursor:pointer;border:none;transition:.2s;letter-spacing:.4px;}
+  .btn-form.cancelar{background:var(--cinza);color:var(--muted);border:1px solid var(--borda);}
+  .btn-form.cancelar:hover{background:#e8edf2;}
+  .btn-form.salvar{background:linear-gradient(135deg,var(--dourado-claro),var(--dourado));color:var(--azul-escuro);}
+  .btn-form.salvar:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(201,162,39,.35);}
+
+  .secao-pedidos{margin-top:6px;border-top:1px dashed var(--borda);padding-top:14px;}
+  .secao-pedidos-titulo{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+  .secao-pedidos-titulo strong{font-size:12px;color:var(--azul);text-transform:uppercase;letter-spacing:1px;}
+
+  .pedido-item{border:1px solid var(--borda);border-radius:10px;padding:12px 14px;margin-bottom:8px;background:#fff;position:relative;}
+  .pedido-item::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;background:var(--azul-claro);border-radius:2px;}
+  .pedido-item .l1{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-left:10px;}
+  .pedido-item .tipo{font-weight:800;color:var(--azul);}
+  .pedido-item .meta{margin-top:6px;font-size:11px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;padding-left:10px;}
+  .pedido-item .acoes{display:flex;gap:6px;margin-top:8px;padding-left:10px;flex-wrap:wrap;}
+
+  .tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:.3px;white-space:nowrap;border:1px solid transparent;}
+  .tag.elab{background:#fff8e1;color:#8a6100;border-color:#ffe082;}
+  .tag.naopronto{background:#ffebee;color:#b71c1c;border-color:#ffcdd2;}
+  .tag.aguardando{background:#fff3e0;color:#a05000;border-color:#ffe0b2;}
+  .tag.assinando{background:#ede7f6;color:#4527a0;border-color:#d1c4e9;}
+  .tag.pronto{background:#e8f5e9;color:#1b5e20;border-color:#c8e6c9;}
+  .tag.enviado{background:#f3e5f5;color:#4a148c;border-color:#e1bee7;}
+  .tag.sem{background:#eceff1;color:#455a64;border-color:#cfd8dc;}
+
+  .vazio{text-align:center;padding:24px;color:var(--muted);font-style:italic;font-size:13px;}
+
+  .lista-selecao{display:grid;gap:8px;max-height:340px;overflow-y:auto;padding:2px;}
+  .item-selecao{border:1px solid var(--borda);border-radius:10px;padding:10px 12px;background:#fff;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:10px;}
+  .item-selecao:hover{border-color:var(--azul-claro);background:#f4f8fc;transform:translateX(2px);}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--azul-escuro);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.35);z-index:9500;transition:transform .3s;max-width:calc(100vw - 32px);}
+  .toast.ativo{transform:translateX(-50%) translateY(0);}
+  .toast.erro{background:var(--vermelho);}
+  .toast.ok{background:var(--verde);}
+
+  .carregando{position:fixed;inset:0;background:var(--azul-escuro);display:flex;align-items:center;justify-content:center;z-index:9999;color:#fff;font-size:12px;letter-spacing:3px;text-transform:uppercase;gap:14px;font-weight:700;padding:20px;text-align:center;}
+  .carregando::after{content:"";width:28px;height:28px;border:3px solid #ffffff22;border-top-color:var(--dourado-claro);border-radius:50%;animation:gira .8s linear infinite;flex-shrink:0;}
+  @keyframes gira{to{transform:rotate(360deg);}}
+
+  @media(max-width:900px){
+    .menu-toggle{display:flex;}
+    nav{position:absolute;top:100%;left:0;right:0;background:linear-gradient(180deg,#16304f,#1e3a5f);flex-direction:column;align-items:stretch;padding:0 8px;gap:2px;flex:initial;justify-content:flex-start;box-shadow:0 8px 24px rgba(0,0,0,.3);border-bottom:2px solid var(--dourado);max-height:0;overflow:hidden;transition:max-height .3s ease, padding .3s ease;overflow-y:auto;}
+    nav.aberto{max-height:80vh;padding:8px;}
+    nav a{padding:12px 16px;border-radius:8px;justify-content:flex-start;font-size:13px;}
+    nav a.ativo::after{display:none;}
+    nav a.ativo{background:rgba(201,162,39,.18);border-left:3px solid var(--dourado);}
+  }
+  @media(max-width:560px){
+    .logo .tag-sec{display:none;}
+    .user-meta{display:none;}
+    .btn-sair{padding:6px 10px;font-size:10px;}
+    .titulo-pagina h1{font-size:18px;}
+    .titulo-acoes{width:100%;}
+    .titulo-acoes .btn-novo{flex:1 1 100%;}
+    th,td{padding:10px 12px;}
+    .form-body{padding:16px;}
+    .form-acoes{padding:12px 16px 16px;}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *{animation-duration:.01ms !important;transition-duration:.01ms !important;}
+    body{animation:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="carregando" id="carregando">Verificando acesso</div>
+<div id="progresso"></div>
+
+<header>
+  <div class="logo">
+    <div class="marca">Controle<span>+</span></div>
+    <span class="tag-sec">SECRETARIA</span>
+  </div>
+  <button class="menu-toggle" onclick="toggleNav()" aria-label="Menu">&#9776;</button>
+  <nav id="navPrincipal">
+    <a onclick="irPara('sistema.html')">Painel</a>
+    <a class="ativo">Cadastro</a>
+    <a onclick="irPara('historico.html')">Histórico</a>
+    <a onclick="irPara('baixa.html')">Baixa</a>
+    <a onclick="irPara('usuarios.html')" id="navUsuarios" style="display:none;">Usuários</a>
+  </nav>
+  <div class="user-info">
+    <div class="user-avatar" id="avatarUsuario">?</div>
+    <div class="user-meta">
+      <span class="nome" id="nomeUsuario">—</span>
+      <span class="papel" id="papelUsuario">—</span>
+    </div>
+    <button class="btn-sair" onclick="logout()">SAIR</button>
+  </div>
+</header>
+
+<div class="container" id="app" style="display:none;">
+  <div class="titulo-pagina">
+    <div>
+      <h1>Cadastro<small>Militares e pedidos</small></h1>
+    </div>
+    <div class="titulo-acoes">
+      <button class="btn-novo sec" onclick="novoPedidoFluxo()">+ NOVO PEDIDO</button>
+      <button class="btn-novo" onclick="abrirFormMilitar()">+ NOVO MILITAR</button>
+    </div>
+  </div>
+
+  <div class="painel">
+    <div class="painel-head">
+      <h2>Militares cadastrados</h2>
+      <span class="contagem" id="contagemMilitares">0</span>
+    </div>
+    <div class="barra-busca">
+      <input type="text" id="busca" placeholder="Buscar por nome ou identidade" oninput="renderMilitares()">
+    </div>
+    <div class="tabela-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Militar</th>
+            <th>Identidade</th>
+            <th>E-mail</th>
+            <th>Pedidos</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpoMilitares"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MILITAR -->
+<div class="overlay" id="overlayMilitar" onclick="if(event.target===this)fecharMilitar()">
+  <div class="modal-form larga">
+    <div class="modal-head">
+      <h2 id="tituloModalMilitar">Novo militar</h2>
+      <button class="fechar" onclick="fecharMilitar()" aria-label="Fechar">&times;</button>
+    </div>
+    <form id="formMilitar" onsubmit="event.preventDefault(); salvarMilitar()">
+      <div class="form-body">
+        <div class="form-erro" id="formMilitarErro"></div>
+        <div class="form-linha-3">
+          <div>
+            <label for="mPosto">Posto</label>
+            <input type="text" id="mPosto" placeholder="Ex.: 3º Sgt">
+          </div>
+          <div style="grid-column:span 2;">
+            <label for="mNome">Nome completo *</label>
+            <input type="text" id="mNome" required placeholder="Ex.: João Pereira da Silva">
+          </div>
+        </div>
+        <div class="form-linha-2">
+          <div>
+            <label for="mIdentidade">Identidade militar</label>
+            <input type="text" id="mIdentidade" placeholder="Ex.: 1234567">
+          </div>
+          <div>
+            <label for="mContato">Contato</label>
+            <input type="text" id="mContato" placeholder="Ex.: (11) 91234-5678">
+          </div>
+        </div>
+        <div>
+          <label for="mEmail">E-mail</label>
+          <input type="email" id="mEmail" placeholder="Ex.: nome@exemplo.mil">
+        </div>
+
+        <div id="secaoPedidos" class="secao-pedidos" style="display:none;">
+          <div class="secao-pedidos-titulo">
+            <strong>Pedidos deste militar</strong>
+            <button type="button" class="btn-novo sec" style="padding:8px 12px;font-size:11px;" onclick="abrirFormPedido()">+ ADICIONAR PEDIDO</button>
+          </div>
+          <div id="listaPedidos"></div>
+        </div>
+      </div>
+      <div class="form-acoes">
+        <button type="button" class="btn-form cancelar" onclick="fecharMilitar()">CANCELAR</button>
+        <button type="submit" class="btn-form salvar">SALVAR MILITAR</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL PEDIDO -->
+<div class="overlay" id="overlayPedido" onclick="if(event.target===this)fecharPedido()">
+  <div class="modal-form">
+    <div class="modal-head">
+      <h2 id="tituloModalPedido">Novo pedido</h2>
+      <button class="fechar" onclick="fecharPedido()" aria-label="Fechar">&times;</button>
+    </div>
+    <form id="formPedido" onsubmit="event.preventDefault(); salvarPedido()">
+      <div class="form-body">
+        <div class="form-erro" id="formPedidoErro"></div>
+        <div id="infoMilitarPedido" style="display:none;background:var(--cinza);padding:10px 12px;border-radius:9px;font-size:12px;color:var(--muted);margin-bottom:4px;"></div>
+        <div class="form-linha-2">
+          <div>
+            <label for="pTipo">Tipo *</label>
+            <select id="pTipo" required>
+              <option value="">Selecione</option>
+              <option>CTSM</option><option>CR</option><option>ALTER</option>
+              <option>Ficha de Informação</option><option>Defesa</option>
+              <option>Carta de Apresentação</option><option>Honra ao Mérito</option>
+              <option>Carta Patente</option><option>Identidade Militar</option><option>Declaração</option>
+            </select>
+          </div>
+          <div>
+            <label for="pSituacao">Situação *</label>
+            <select id="pSituacao" required>
+              <option>Em elaboração</option><option>Não pronto</option>
+              <option>Aguardando assinatura</option><option>Assinando</option>
+              <option>Pronto</option><option>Enviado</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-linha-3">
+          <div>
+            <label for="pEntrada">Data de entrada</label>
+            <input type="date" id="pEntrada">
+          </div>
+          <div>
+            <label for="pEntrega">Data de entrega</label>
+            <input type="date" id="pEntrega">
+          </div>
+          <div>
+            <label for="pDocs">Docs conferidos</label>
+            <input type="number" id="pDocs" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-linha-2">
+          <div>
+            <label for="pVia">Via</label>
+            <select id="pVia">
+              <option>DIEX</option><option>e-mail</option><option>requerimento</option>
+            </select>
+          </div>
+          <div>
+            <label for="pResponsavel">Responsável</label>
+            <select id="pResponsavel">
+              <option value="">Carregando…</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="form-acoes">
+        <button type="button" class="btn-form cancelar" onclick="fecharPedido()">CANCELAR</button>
+        <button type="submit" class="btn-form salvar">SALVAR PEDIDO</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL SELECIONAR MILITAR -->
+<div class="overlay" id="overlaySelecionarMilitar" onclick="if(event.target===this)fecharSelecionarMilitar()">
+  <div class="modal-form">
+    <div class="modal-head">
+      <h2>Para qual militar?</h2>
+      <button class="fechar" onclick="fecharSelecionarMilitar()" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="form-body">
+      <input type="text" id="buscaSelecao" placeholder="Buscar militar..." oninput="renderSelecaoMilitares()"
+        style="padding:10px 12px;border:1px solid var(--borda);border-radius:9px;font-size:13px;background:var(--cinza);outline:none;">
+      <div id="listaSelecao" class="lista-selecao"></div>
+    </div>
+    <div class="form-acoes">
+      <button type="button" class="btn-form cancelar" onclick="fecharSelecionarMilitar()">CANCELAR</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   HELPERS
+   ============================================================ */
+async function api(url, opts={}){
+  const resp = await fetch(url, {
+    headers: {'Content-Type':'application/json'},
+    credentials: 'same-origin',
+    ...opts
+  });
+  return await resp.json();
+}
+function toast(msg, tipo){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ativo ' + (tipo || 'ok');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=> el.classList.remove('ativo'), 2800);
+}
+function toggleNav(){ document.getElementById('navPrincipal').classList.toggle('aberto'); }
+document.addEventListener('click', e=>{
+  const nav = document.getElementById('navPrincipal');
+  const btn = document.querySelector('.menu-toggle');
+  if(nav.classList.contains('aberto') && !nav.contains(e.target) && !btn.contains(e.target)){
+    nav.classList.remove('aberto');
+  }
+});
+function iniciais(nome){
+  const p = nome.trim().split(/\s+/);
+  if(p.length === 1) return p[0].charAt(0).toUpperCase();
+  return (p[0].charAt(0) + p[p.length-1].charAt(0)).toUpperCase();
+}
+function classeSituacao(s){
+  const map={"Em elaboração":"elab","Não pronto":"naopronto","Aguardando assinatura":"aguardando","Assinando":"assinando","Pronto":"pronto","Enviado":"enviado"};
+  return map[s] || "sem";
+}
+function progressoInicio(){
+  const p = document.getElementById('progresso');
+  p.classList.remove('completa'); void p.offsetWidth; p.classList.add('ativa');
+}
+function progressoFim(){
+  const p = document.getElementById('progresso');
+  p.classList.remove('ativa'); p.classList.add('completa');
+  setTimeout(()=> p.classList.remove('completa'), 500);
+}
+async function logout(){
+  try{ await fetch('/api/logout', {method:'POST', credentials:'same-origin'}); }catch(e){}
+  document.body.style.transition = 'opacity .25s';
+  document.body.style.opacity = 0;
+  setTimeout(()=> window.location.href = '/', 250);
+}
+function irPara(url){
+  progressoInicio();
+  document.body.style.transition = 'opacity .25s, transform .25s, filter .25s';
+  document.body.style.opacity = 0;
+  document.body.style.transform = 'translateX(-12px)';
+  document.body.style.filter = 'blur(2px)';
+  setTimeout(()=> window.location.href = url, 200);
+}
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let SESSAO_ATUAL = null;
+let MILITARES = [];
+let PEDIDOS = [];
+let USUARIOS = [];
+let militarEditandoId = null;
+let pedidoEditandoId = null;
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function iniciar(){
+  try{
+    const r = await api('/api/sessao');
+    if(!r.ok){ window.location.href = '/'; return; }
+    SESSAO_ATUAL = r.usuario;
+
+    document.getElementById('nomeUsuario').textContent = SESSAO_ATUAL.nome;
+    document.getElementById('papelUsuario').textContent =
+      SESSAO_ATUAL.perfil === 'gerente' ? 'Gerente' : 'Auxiliar';
+    document.getElementById('avatarUsuario').textContent =
+      SESSAO_ATUAL.nome.charAt(0).toUpperCase();
+
+    if(SESSAO_ATUAL.perfil === 'gerente'){
+      document.getElementById('navUsuarios').style.display = 'inline-flex';
+    }
+
+    await carregarDados();
+
+    document.getElementById('carregando').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }catch(e){
+    console.error(e);
+    window.location.href = '/';
+  }
+}
+
+async function carregarDados(){
+  progressoInicio();
+  // Carrega militares, pedidos e usuários (responsáveis) em paralelo
+  const [rm, rp, ru] = await Promise.all([
+    api('/api/militares'),
+    api('/api/pedidos'),
+    api('/api/usuarios_responsaveis')  // lista leve de responsáveis
+  ]);
+  MILITARES = rm.ok ? rm.militares : [];
+  PEDIDOS   = rp.ok ? rp.pedidos   : [];
+  USUARIOS  = ru.ok ? ru.usuarios  : [];
+  preencherSelectResponsavel();
+  renderMilitares();
+  progressoFim();
+}
+
+/* Preenche o <select id="pResponsavel"> com os usuários ativos */
+function preencherSelectResponsavel(){
+  const sel = document.getElementById('pResponsavel');
+  if(!sel) return;
+  const valorAtual = sel.value;
+  sel.innerHTML = '';
+
+  // ordena por nome para ficar previsível
+  const lista = [...USUARIOS]
+    .filter(u => u.ativo !== false)   // inclui se "ativo" for undefined
+    .sort((a,b)=> (a.nome || '').localeCompare(b.nome || ''));
+
+  if(!lista.length){
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Sem usuários cadastrados';
+    sel.appendChild(opt);
+    return;
+  }
+
+  lista.forEach(u=>{
+    const opt = document.createElement('option');
+    opt.value = u.nome;               // salvamos o NOME no pedido
+    opt.textContent = u.nome;
+    sel.appendChild(opt);
+  });
+
+  // tenta preservar seleção anterior
+  if(valorAtual && [...sel.options].some(o=>o.value === valorAtual)){
+    sel.value = valorAtual;
+  }
+}
+
+/* ============================================================
+   LISTAGEM
+   ============================================================ */
+function pedidosDoMilitar(mid){
+  return PEDIDOS.filter(p => p.militar_id === mid);
+}
+
+function renderMilitares(){
+  const busca = document.getElementById('busca').value.toLowerCase();
+  const corpo = document.getElementById('corpoMilitares');
+  corpo.innerHTML = '';
+
+  const filtrados = MILITARES.filter(m => {
+    if(!busca) return true;
+    return m.nome.toLowerCase().includes(busca) || (m.identidade||'').includes(busca);
+  });
+
+  document.getElementById('contagemMilitares').textContent =
+    filtrados.length + (filtrados.length === 1 ? ' militar' : ' militares');
+
+  if(!filtrados.length){
+    corpo.innerHTML = '<tr><td colspan="5" class="vazio">Nenhum militar encontrado.</td></tr>';
+    return;
+  }
+
+  filtrados.forEach(m=>{
+    const qtd = pedidosDoMilitar(m.id).length;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div class="militar-cell">
+          <div class="avatar-mini">${iniciais(m.nome)}</div>
+          <div class="militar-cell-txt">
+            <div class="p">${m.posto || '—'}</div>
+            <div class="n">${m.nome}</div>
+          </div>
+        </div>
+      </td>
+      <td>${m.identidade || '—'}</td>
+      <td>${m.email || '—'}</td>
+      <td><span class="badge-num">${qtd}</span></td>
+      <td>
+        <div class="acoes-linha">
+          <button class="btn-mini ver" onclick="verPedidos(${m.id})">Pedidos</button>
+          <button class="btn-mini editar" onclick="editarMilitar(${m.id})">Editar</button>
+          <button class="btn-mini excluir" onclick="excluirMilitar(${m.id})">Excluir</button>
+        </div>
+      </td>`;
+    corpo.appendChild(tr);
+  });
+}
+
+/* ============================================================
+   NOVO PEDIDO direto do topo
+   ============================================================ */
+function novoPedidoFluxo(){
+  if(MILITARES.length === 0){
+    toast('Cadastre um militar primeiro.', 'erro');
+    return;
+  }
+  document.getElementById('buscaSelecao').value = '';
+  renderSelecaoMilitares();
+  document.getElementById('overlaySelecionarMilitar').classList.add('ativo');
+}
+
+function renderSelecaoMilitares(){
+  const b = (document.getElementById('buscaSelecao')?.value || '').toLowerCase();
+  const alvo = document.getElementById('listaSelecao');
+  alvo.innerHTML = '';
+  const filtrados = MILITARES.filter(m => {
+    if(!b) return true;
+    return m.nome.toLowerCase().includes(b) || (m.identidade||'').includes(b);
+  });
+  if(!filtrados.length){
+    alvo.innerHTML = '<div class="vazio">Nenhum militar encontrado.</div>';
+    return;
+  }
+  filtrados.forEach(m=>{
+    const div = document.createElement('div');
+    div.className = 'item-selecao';
+    div.onclick = ()=>{ escolherMilitarParaPedido(m.id); };
+    div.innerHTML = `
+      <div class="avatar-mini">${iniciais(m.nome)}</div>
+      <div class="militar-cell-txt">
+        <div class="p">${m.posto || '—'}</div>
+        <div class="n">${m.nome}</div>
+      </div>
+    `;
+    alvo.appendChild(div);
+  });
+}
+
+function escolherMilitarParaPedido(mid){
+  fecharSelecionarMilitar();
+  editarMilitar(mid);
+  setTimeout(()=>{ abrirFormPedido(); }, 150);
+}
+
+function fecharSelecionarMilitar(){
+  document.getElementById('overlaySelecionarMilitar').classList.remove('ativo');
+}
+
+/* ============================================================
+   MODAL MILITAR
+   ============================================================ */
+function abrirFormMilitar(){
+  militarEditandoId = null;
+  document.getElementById('tituloModalMilitar').textContent = 'Novo militar';
+  document.getElementById('formMilitar').reset();
+  document.getElementById('formMilitarErro').classList.remove('ativo');
+  document.getElementById('secaoPedidos').style.display = 'none';
+  document.getElementById('overlayMilitar').classList.add('ativo');
+}
+
+function editarMilitar(id){
+  const m = MILITARES.find(x=>x.id===id);
+  if(!m) return;
+  militarEditandoId = id;
+  document.getElementById('tituloModalMilitar').textContent = 'Editar militar';
+  document.getElementById('mPosto').value = m.posto || '';
+  document.getElementById('mNome').value = m.nome || '';
+  document.getElementById('mIdentidade').value = m.identidade || '';
+  document.getElementById('mContato').value = m.contato || '';
+  document.getElementById('mEmail').value = m.email || '';
+  document.getElementById('formMilitarErro').classList.remove('ativo');
+
+  document.getElementById('secaoPedidos').style.display = 'block';
+  renderPedidosDoMilitar(id);
+
+  document.getElementById('overlayMilitar').classList.add('ativo');
+}
+
+function verPedidos(id){ editarMilitar(id); }
+
+function renderPedidosDoMilitar(mid){
+  const alvo = document.getElementById('listaPedidos');
+  const lista = pedidosDoMilitar(mid);
+  if(!lista.length){
+    alvo.innerHTML = '<div class="vazio" style="padding:14px;">Nenhum pedido cadastrado. Clique em <b>+ ADICIONAR PEDIDO</b>.</div>';
+    return;
+  }
+  alvo.innerHTML = '';
+  lista.forEach(p=>{
+    const div = document.createElement('div');
+    div.className = 'pedido-item';
+    div.innerHTML = `
+      <div class="l1">
+        <span class="tipo">${p.tipo}</span>
+        <span class="tag ${classeSituacao(p.situacao)}">${p.situacao}</span>
+      </div>
+      <div class="meta">
+        <span>Entrada: <b>${p.data_entrada || '—'}</b></span>
+        <span>Via: <b>${p.via || '—'}</b></span>
+        <span>Responsável: <b>${p.responsavel || '—'}</b></span>
+        <span>Entrega: <b>${p.data_entrega || '—'}</b></span>
+      </div>
+      <div class="acoes">
+        <button type="button" class="btn-mini editar" onclick="abrirFormPedido(${p.id})">Editar</button>
+        <button type="button" class="btn-mini excluir" onclick="excluirPedido(${p.id})">Excluir</button>
+      </div>`;
+    alvo.appendChild(div);
+  });
+}
+
+async function salvarMilitar(){
+  const erro = document.getElementById('formMilitarErro');
+  const dados = {
+    nome: document.getElementById('mNome').value.trim(),
+    posto: document.getElementById('mPosto').value.trim(),
+    identidade: document.getElementById('mIdentidade').value.trim(),
+    email: document.getElementById('mEmail').value.trim(),
+    contato: document.getElementById('mContato').value.trim()
+  };
+  if(!dados.nome){ erro.textContent = 'Informe o nome.'; erro.classList.add('ativo'); return; }
+
+  progressoInicio();
+  let r;
+  if(militarEditandoId){
+    r = await api('/api/militares/' + militarEditandoId, {method:'PUT', body: JSON.stringify(dados)});
+  } else {
+    r = await api('/api/militares', {method:'POST', body: JSON.stringify(dados)});
+  }
+  progressoFim();
+
+  if(!r.ok){
+    erro.textContent = r.erro || 'Erro ao salvar.';
+    erro.classList.add('ativo');
+    return;
+  }
+
+  toast(militarEditandoId ? 'Militar atualizado.' : 'Militar cadastrado.', 'ok');
+  const eraNovo = !militarEditandoId;
+  const novoId = r.id;
+
+  await carregarDados();
+
+  if(eraNovo && novoId){
+    editarMilitar(novoId);
+    toast('Agora adicione os pedidos.', 'ok');
+  } else {
+    fecharMilitar();
+  }
+}
+
+function fecharMilitar(){
+  document.getElementById('overlayMilitar').classList.remove('ativo');
+  militarEditandoId = null;
+}
+
+async function excluirMilitar(id){
+  if(!confirm('Excluir este militar e todos os pedidos dele?')) return;
+  progressoInicio();
+  const r = await api('/api/militares/' + id, {method:'DELETE'});
+  progressoFim();
+  if(!r.ok){ toast(r.erro || 'Erro ao excluir.', 'erro'); return; }
+  toast('Militar excluído.', 'ok');
+  await carregarDados();
+}
+
+/* ============================================================
+   MODAL PEDIDO
+   ============================================================ */
+function abrirFormPedido(pid){
+  if(!militarEditandoId){
+    toast('Selecione um militar primeiro.', 'erro');
+    return;
+  }
+  pedidoEditandoId = pid || null;
+
+  document.getElementById('tituloModalPedido').textContent = pid ? 'Editar pedido' : 'Novo pedido';
+  document.getElementById('formPedido').reset();
+  document.getElementById('formPedidoErro').classList.remove('ativo');
+
+  // atualiza a lista de responsáveis (usuários) antes de selecionar
+  preencherSelectResponsavel();
+
+  // mostra de qual militar é o pedido
+  const m = MILITARES.find(x=>x.id === militarEditandoId);
+  const info = document.getElementById('infoMilitarPedido');
+  if(m){
+    info.style.display = 'block';
+    info.innerHTML = `Pedido para: <b>${m.posto || ''} ${m.nome}</b>`;
+  } else {
+    info.style.display = 'none';
+  }
+
+  if(pid){
+    const p = PEDIDOS.find(x=>x.id===pid);
+    if(p){
+      document.getElementById('pTipo').value = p.tipo;
+      document.getElementById('pSituacao').value = p.situacao;
+      document.getElementById('pEntrada').value = p.data_entrada || '';
+      document.getElementById('pEntrega').value = p.data_entrega || '';
+      document.getElementById('pDocs').value = p.docs_ok || 0;
+      document.getElementById('pVia').value = p.via || 'DIEX';
+
+      // tenta selecionar o responsável antigo se ainda existir como usuário
+      const sel = document.getElementById('pResponsavel');
+      if(p.responsavel && [...sel.options].some(o=>o.value === p.responsavel)){
+        sel.value = p.responsavel;
+      } else if(p.responsavel){
+        // mantém como opção avulsa para não perder o dado
+        const opt = document.createElement('option');
+        opt.value = p.responsavel;
+        opt.textContent = p.responsavel + ' (antigo)';
+        sel.appendChild(opt);
+        sel.value = p.responsavel;
+      }
+    }
+  }
+
+  document.getElementById('overlayPedido').classList.add('ativo');
+}
+
+function fecharPedido(){
+  document.getElementById('overlayPedido').classList.remove('ativo');
+  pedidoEditandoId = null;
+}
+
+async function salvarPedido(){
+  const erro = document.getElementById('formPedidoErro');
+  const dados = {
+    militar_id: militarEditandoId,
+    tipo: document.getElementById('pTipo').value,
+    situacao: document.getElementById('pSituacao').value,
+    data_entrada: document.getElementById('pEntrada').value || null,
+    data_entrega: document.getElementById('pEntrega').value || null,
+    docs_ok: parseInt(document.getElementById('pDocs').value || 0, 10),
+    via: document.getElementById('pVia').value,
+    responsavel: document.getElementById('pResponsavel').value
+  };
+  if(!dados.tipo){ erro.textContent = 'Selecione o tipo.'; erro.classList.add('ativo'); return; }
+  if(!dados.responsavel){ erro.textContent = 'Selecione o responsável.'; erro.classList.add('ativo'); return; }
+
+  progressoInicio();
+  let r;
+  if(pedidoEditandoId){
+    r = await api('/api/pedidos/' + pedidoEditandoId, {method:'PUT', body: JSON.stringify(dados)});
+  } else {
+    r = await api('/api/pedidos', {method:'POST', body: JSON.stringify(dados)});
+  }
+  progressoFim();
+
+  if(!r.ok){
+    erro.textContent = r.erro || 'Erro ao salvar pedido.';
+    erro.classList.add('ativo');
+    return;
+  }
+
+  toast(pedidoEditandoId ? 'Pedido atualizado.' : 'Pedido adicionado.', 'ok');
+  fecharPedido();
+
+  await carregarDados();
+  renderPedidosDoMilitar(militarEditandoId);
+}
+
+async function excluirPedido(pid){
+  if(!confirm('Excluir este pedido?')) return;
+  progressoInicio();
+  const r = await api('/api/pedidos/' + pid, {method:'DELETE'});
+  progressoFim();
+  if(!r.ok){ toast(r.erro || 'Erro ao excluir.', 'erro'); return; }
+  toast('Pedido excluído.', 'ok');
+  await carregarDados();
+  renderPedidosDoMilitar(militarEditandoId);
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape'){
+    fecharPedido();
+    fecharSelecionarMilitar();
+    fecharMilitar();
+  }
+});
+
+iniciar();
+</script>
+</body>
+</html>
