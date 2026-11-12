@@ -33,10 +33,10 @@ DB_PATH = os.environ.get('DATABASE_PATH', os.path.join(BASE_DIR, 'controleplus.d
 os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
 
 app = Flask(__name__, static_folder=None)
-app.secret_key = os.environ.get(
-    'SECRET_KEY',
-    'controleplus-dev-troque-esta-chave-em-producao'
-)
+_secret_key = os.environ.get('SECRET_KEY')
+if not _secret_key and os.environ.get('FLASK_ENV') == 'production':
+    raise RuntimeError('Configure SECRET_KEY nas variáveis de ambiente antes de publicar.')
+app.secret_key = _secret_key or 'controleplus-dev-troque-esta-chave-em-producao'
 
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -142,13 +142,19 @@ def init_db():
     # ---------- gerente master ----------
     c.execute("SELECT COUNT(*) AS n FROM usuarios WHERE perfil='gerente'")
     if c.fetchone()['n'] == 0:
+        initial_password = os.environ.get('INITIAL_ADMIN_PASSWORD')
+        if not initial_password:
+            if os.environ.get('FLASK_ENV') == 'production':
+                conn.close()
+                raise RuntimeError('Defina INITIAL_ADMIN_PASSWORD para criar o primeiro gerente no ambiente de produção.')
+            initial_password = '1234'
         c.execute('''
             INSERT INTO usuarios (nome, usuario, senha_hash, perfil, ativo, criado_em, criado_por)
             VALUES (?, ?, ?, 'gerente', 1, ?, 'sistema')
         ''', (
             'Gerente Master',
             'gerente',
-            generate_password_hash(os.environ.get('INITIAL_ADMIN_PASSWORD', '1234')),
+            generate_password_hash(initial_password),
             datetime.now().isoformat()
         ))
 

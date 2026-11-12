@@ -1,60 +1,52 @@
-# Controle+ — Sistema da Secretaria
+# Controle+ — pronto para GitHub e Render
 
-Aplicação web em Flask com páginas HTML e banco SQLite.
+Aplicação web Flask com páginas HTML e banco SQLite.
 
-## Estrutura
+## Arquivos
 
 - `app.py`: servidor Flask e API.
-- `index.html`: tela de acesso.
-- `sistema.html`, `cadastro.html`, `baixa.html`, `historico.html`, `usuarios.html`: telas do sistema.
+- `index.html`, `sistema.html`, `usuarios.html`, `historico.html`, `cadastro.html`, `baixa.html`: telas.
 - `requirements.txt`: dependências Python.
-- `render.yaml`: configuração de deploy no Render.
-
-## Rodar localmente
-
-1. Instale Python 3.10 ou superior.
-2. Crie e ative um ambiente virtual.
-3. Instale as dependências:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Configure as variáveis de ambiente (recomendado): `SECRET_KEY` e `INITIAL_ADMIN_PASSWORD`.
-5. Inicie:
-
-   ```bash
-   python app.py
-   ```
-
-6. Abra `http://localhost:5000`.
-
-Na primeira execução, o sistema cria o banco e as tabelas automaticamente. Se `INITIAL_ADMIN_PASSWORD` não for definida, a senha inicial permanece `1234`; defina uma senha forte antes de publicar e altere-a depois do primeiro acesso.
+- `render.yaml`: configuração do serviço Python no Render e disco persistente.
+- `.env.example`: exemplo de configuração local.
 
 ## Publicar no GitHub
 
-1. Crie um repositório novo no GitHub.
-2. Envie todos os arquivos desta pasta, mantendo a estrutura.
-3. **Não envie banco de dados, backups, `.env` ou senhas.** O `.gitignore` já protege esses arquivos.
+1. Extraia este ZIP.
+2. Crie um repositório no GitHub.
+3. Envie **o conteúdo desta pasta** para a raiz do repositório (o `app.py`, `requirements.txt` e `render.yaml` devem ficar na raiz).
+4. Não envie banco de dados, backups ou arquivos `.env`. O `.gitignore` já exclui esses arquivos.
 
 ## Publicar no Render
 
-1. No Render, escolha **New + → Blueprint** e conecte o repositório GitHub, ou crie um **Web Service** a partir dele.
-2. Se usar Blueprint, o Render lê `render.yaml`. Se criar Web Service manualmente, use:
-   - Runtime: Python 3
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `gunicorn app:app --workers 1 --threads 4 --timeout 120`
-3. Configure as variáveis: `SECRET_KEY` (valor aleatório forte), `INITIAL_ADMIN_PASSWORD` (senha inicial forte), `FLASK_ENV=production` e `DATABASE_PATH=/var/data/controleplus.db`.
-4. Anexe um **Persistent Disk** montado em `/var/data` (o `render.yaml` já descreve um disco de 1 GB). SQLite precisa de armazenamento persistente: sem disco, os dados podem ser perdidos em novos deploys/reinicializações.
-5. Faça o deploy e abra a URL fornecida pelo Render.
+**Opção recomendada:** no Render, selecione **New + → Blueprint**, conecte o repositório e deixe o Render ler o `render.yaml`.
 
-## Banco de dados e migração
+Se criar um Web Service manualmente, configure:
 
-O arquivo `controleplus.db` original foi deliberadamente excluído deste pacote para não publicar dados operacionais. O primeiro deploy criará um banco vazio com as tabelas e companhias padrão. Se precisar preservar cadastros existentes, faça uma migração segura do banco para o disco persistente do Render; não coloque o arquivo `.db` no repositório público.
+- Runtime: `Python 3`
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `gunicorn app:app --workers 1 --threads 4 --timeout 120`
+- `SECRET_KEY`: gere uma chave aleatória forte.
+- `INITIAL_ADMIN_PASSWORD`: defina uma senha forte para o primeiro acesso.
+- `FLASK_ENV`: `production`
+- `DATABASE_PATH`: `/var/data/controleplus.db`
 
-## Segurança
+Anexe um Persistent Disk montado em `/var/data`. O `render.yaml` já declara um disco de 1 GB. Se o Render estiver executando `yarn` ou Node.js, o serviço foi criado com runtime incorreto: crie um novo Web Service Python ou use o Blueprint deste repositório.
 
-- Defina `SECRET_KEY` e `INITIAL_ADMIN_PASSWORD` no painel do Render, nunca no código.
-- Troque a senha inicial assim que entrar no sistema.
-- Restrinja o acesso ao repositório e à aplicação conforme a sensibilidade dos dados.
-- Faça backups periódicos do banco pelo recurso de backup do sistema e guarde-os em local privado.
+## Primeiro acesso e banco de dados
+
+O banco será criado automaticamente no primeiro início. O usuário inicial é `gerente`; a senha será exatamente a que você informar em `INITIAL_ADMIN_PASSWORD`. Em produção, o app não inicia se essa senha ou `SECRET_KEY` estiverem ausentes.
+
+O banco de dados original não foi incluído neste pacote, para evitar publicar dados operacionais no GitHub. Assim, o primeiro deploy inicia com banco vazio e companhias padrão. Para preservar os registros existentes, faça uma migração privada do arquivo SQLite para o disco persistente do Render; não coloque o `.db` no repositório público.
+
+## Rodar localmente
+
+```bash
+python -m venv .venv
+# Windows: .venv\\Scripts\\activate
+# Linux/macOS: source .venv/bin/activate
+pip install -r requirements.txt
+python app.py
+```
+
+Abra `http://localhost:5000`. No ambiente local, se ainda não houver gerente, a senha inicial de desenvolvimento é `1234`; altere-a após entrar. Não use essa senha em produção.
