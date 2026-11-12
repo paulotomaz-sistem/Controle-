@@ -28,19 +28,17 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # CONFIGURAÇÃO
 # ============================================================
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-# Render: configure DATABASE_PATH=/var/data/controleplus.db and attach a persistent disk.
-DB_PATH = os.environ.get('DATABASE_PATH', os.path.join(BASE_DIR, 'controleplus.db'))
-os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
+DB_PATH = os.environ.get('DB_PATH', os.path.join(BASE_DIR, 'controleplus.db'))
 
 app = Flask(__name__, static_folder=None)
-_secret_key = os.environ.get('SECRET_KEY')
-if not _secret_key and os.environ.get('FLASK_ENV') == 'production':
-    raise RuntimeError('Configure SECRET_KEY nas variáveis de ambiente antes de publicar.')
-app.secret_key = _secret_key or 'controleplus-dev-troque-esta-chave-em-producao'
+app.secret_key = os.environ.get(
+    'SECRET_KEY',
+    'controleplus-dev-troque-esta-chave-em-producao'
+)
 
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'  # HTTPS no Render
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)
 
 
@@ -142,19 +140,13 @@ def init_db():
     # ---------- gerente master ----------
     c.execute("SELECT COUNT(*) AS n FROM usuarios WHERE perfil='gerente'")
     if c.fetchone()['n'] == 0:
-        initial_password = os.environ.get('INITIAL_ADMIN_PASSWORD')
-        if not initial_password:
-            if os.environ.get('FLASK_ENV') == 'production':
-                conn.close()
-                raise RuntimeError('Defina INITIAL_ADMIN_PASSWORD para criar o primeiro gerente no ambiente de produção.')
-            initial_password = '1234'
         c.execute('''
             INSERT INTO usuarios (nome, usuario, senha_hash, perfil, ativo, criado_em, criado_por)
             VALUES (?, ?, ?, 'gerente', 1, ?, 'sistema')
         ''', (
             'Gerente Master',
             'gerente',
-            generate_password_hash(initial_password),
+            generate_password_hash('1234'),
             datetime.now().isoformat()
         ))
 
@@ -796,7 +788,8 @@ def api_backup():
 # ============================================================
 # INICIALIZAÇÃO
 # ============================================================
-# Initialize schema on application startup (works with Gunicorn/Render too).
+# O Gunicorn importa este módulo; por isso o banco deve ser preparado
+# também fora do bloco __main__.
 init_db()
 
 if __name__ == '__main__':
@@ -805,6 +798,6 @@ if __name__ == '__main__':
     print('=' * 60)
     print(f'  Banco:  {DB_PATH}')
     print(f'  Acesse: http://127.0.0.1:5000')
-    print('  Login inicial: gerente (senha definida em INITIAL_ADMIN_PASSWORD)')
+    print(f'  Login inicial: gerente / 1234')
     print('=' * 60)
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
+    app.run(host='127.0.0.1', port=5000, debug=True)
